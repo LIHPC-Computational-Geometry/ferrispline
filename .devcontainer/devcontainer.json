@@ -1,0 +1,26 @@
+{
+  "build": {
+    "dockerfile": "Dockerfile",
+    "options": [
+      "--network=host"
+    ]
+  },
+  "runArgs": [
+    "--device=/dev/dri:/dev/dri"
+  ],
+  "mounts": [
+    {
+      "source": "/tmp/.X11-unix",
+      "target": "/tmp/.X11-unix",
+      "type": "bind"
+    }
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  }
+}
