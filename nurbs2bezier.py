@@ -4,7 +4,7 @@ from scipy.special import comb
 import matplotlib.cm as cm
 
 
-def algo1(nodes, degree, interval_index):
+def computeConversionMatrix(nodes, degree, interval_index):
     S = np.eye(1)
     for k in range(1, degree + 1):
         begin = max(0, interval_index - k)
@@ -75,14 +75,14 @@ def evalNURBSCurve(nodes, control_points, weights, degree, nb_points=300):
         numerator = np.zeros(control_points.shape[1])
         denominator = 0.0
         for i in range(len(control_points)):
-            N = R_de_Boor(i, degree, nodes, u)
+            N = evalBspline(i, degree, nodes, u)
             numerator += weights[i] * N * control_points[i]
             denominator += weights[i] * N
         curve[idx] = numerator / denominator
     return curve
 
 
-def eval_surface_nurbs(
+def evalNURBSSurface(
     nodes_u,
     nodes_v,
     control_points,
@@ -107,9 +107,9 @@ def eval_surface_nurbs(
             numerator = np.zeros(3)
             denominator = 0.0
             for i in range(control_points.shape[0]):
-                Ni = evalDeBoorSurface(i, degree_u, nodes_u, u)
+                Ni = evalBsplineSurface(i, degree_u, nodes_u, u)
                 for j in range(control_points.shape[1]):
-                    Mj = evalDeBoorSurface(j, degree_v, nodes_v, v)
+                    Mj = evalBsplineSurface(j, degree_v, nodes_v, v)
                     weights_ij = weights[i, j]
                     NMi_w = Ni * Mj * weights_ij
                     numerator += NMi_w * control_points[i, j]
@@ -118,7 +118,7 @@ def eval_surface_nurbs(
     return surface
 
 
-def R_de_Boor(i, degree, nodes, u):
+def evalBspline(i, degree, nodes, u):
     n = len(nodes) - 1
     if degree == 0:
         if i >= n:
@@ -129,20 +129,20 @@ def R_de_Boor(i, degree, nodes, u):
     if (i + degree) < n:
         denom1 = nodes[i + degree] - nodes[i]
         if denom1 != 0:
-            first_part = (u - nodes[i]) / denom1 * R_de_Boor(i, degree - 1, nodes, u)
+            first_part = (u - nodes[i]) / denom1 * evalBspline(i, degree - 1, nodes, u)
     if (i + degree + 1) < n:
         denom2 = nodes[i + degree + 1] - nodes[i + 1]
         if denom2 != 0:
             second_part = (
                 (nodes[i + degree + 1] - u)
                 / denom2
-                * R_de_Boor(i + 1, degree - 1, nodes, u)
+                * evalBspline(i + 1, degree - 1, nodes, u)
             )
     return first_part + second_part
 
 
 # on l'ajoute pour les surfaces specifiquement
-def evalDeBoorSurface(i, degree, nodes, parameter):
+def evalBsplineSurface(i, degree, nodes, parameter):
     n = len(nodes) - 1
     if degree == 0:
         if i >= n:
@@ -156,7 +156,7 @@ def evalDeBoorSurface(i, degree, nodes, parameter):
             first_part = (
                 (parameter - nodes[i])
                 / denom1
-                * evalDeBoorSurface(i, degree - 1, nodes, parameter)
+                * evalBsplineSurface(i, degree - 1, nodes, parameter)
             )
     if (i + degree + 1) < n:
         denom2 = nodes[i + degree + 1] - nodes[i + 1]
@@ -164,7 +164,7 @@ def evalDeBoorSurface(i, degree, nodes, parameter):
             second_part = (
                 (nodes[i + degree + 1] - parameter)
                 / denom2
-                * evalDeBoorSurface(i + 1, degree - 1, nodes, parameter)
+                * evalBsplineSurface(i + 1, degree - 1, nodes, parameter)
             )
     return first_part + second_part
 
@@ -199,8 +199,8 @@ for i in range(degree, len(nodes) - degree - 1):
         if first < 0 or laste >= len(control_points):
             continue
 
-        S = algo1(nodes, degree, i)
-        print(f"Matrice S pour l'intervalle {i} :")
+        S = computeConversionMatrix(nodes, degree, i)
+        print(f"Matrix S for interval {i} :")
         print(S)
         print()
 
@@ -258,7 +258,7 @@ for u in nodes[degree:-degree]:
     numerator = np.zeros(control_points.shape[1])
     denominator = 0.0
     for i in range(len(control_points)):
-        N = R_de_Boor(i, degree, nodes, u)
+        N = evalBspline(i, degree, nodes, u)
         numerator += weights[i] * N * control_points[i]
         denominator += weights[i] * N
     point = numerator / denominator
