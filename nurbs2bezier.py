@@ -44,32 +44,35 @@ def bernstein(i, degree, t):
     return comb(degree, i) * (t**i) * (1 - t) ** (degree - i)
 
 
-def evalBezierCurve(control_points, weights, degree, nb_points=100):
-    t = np.linspace(0, 1, nb_points)
-    curve = np.zeros((nb_points, control_points.shape[1]))
-
-    for i in range(degree + 1):
-        B = bernstein(i, degree, t)
-        WB = weights[i] * B
-        temp = WB[:, np.newaxis] * control_points[i]
-        curve += temp
-
-    denominator = np.zeros(nb_points)
+def evalBezierCurve(control_points, weights, degree, sample=100):
+    # Evaluates rational Bezier curve and returns it.
+    #
+    # The formula is:
+    # Math: \text{curve}(t) = \frac{1}{\sum_{i=0}^{\text{degree}} \text{weights}[i] \begin{pmatrix} \text{degree} \\ i \end{pmatrix} t^{i} (1 - t)^{(\text{degree} - i)}} \sum_{i=0}^{\text{degree}} \text{weights}[i] \begin{pmatrix} \text{degree} \\ i \end{pmatrix} t^{i} (1 - t)^{(\text{degree} - i)} \text{control_points}[i]
+    #
+    # :param control_points: control points vector.
+    # :param weights: weights vector.
+    # :param degree: Bezier basis degree.
+    # :param sample: render sample.
+    
+    t = np.linspace(0, 1, sample)
+    nominator = np.zeros((sample, control_points.shape[1]))
+    denominator = np.zeros(sample)
 
     for i in range(degree + 1):
         B = bernstein(i, degree, t)
         WB = weights[i] * B
         denominator += WB
+        nominator += WB[:, np.newaxis] * control_points[i]
 
-    curve = curve / denominator[:, np.newaxis]
-    return curve
+    return nominator / denominator[:, np.newaxis]
 
 
-def evalNURBSCurve(nodes, control_points, weights, degree, nb_points=300):
+def evalNURBSCurve(nodes, control_points, weights, degree, sample=300):
     u_min = nodes[degree]
     u_max = nodes[-degree - 1]
-    u_vals = np.linspace(u_min, u_max, nb_points)
-    curve = np.zeros((nb_points, control_points.shape[1]))
+    u_vals = np.linspace(u_min, u_max, sample)
+    curve = np.zeros((sample, control_points.shape[1]))
 
     for idx, u in enumerate(u_vals):
         numerator = np.zeros(control_points.shape[1])
@@ -266,9 +269,9 @@ for u in nodes[degree:-degree]:
     y_vals.append(point[1])
     z_vals.append(point[2])
 
-ax.scatter(x_vals, y_vals, z_vals, color="red", s=50, label="Bézier points")
+ax.scatter(x_vals, y_vals, z_vals, color="red", s=50, label="Bezier points")
 
-ax.set_title("NURBS to Bézier")
+ax.set_title("NURBS to Bezier")
 ax.set_xlabel("X")
 ax.set_ylabel("Y")
 ax.set_zlabel("Z")
