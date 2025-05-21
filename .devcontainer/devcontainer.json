@@ -1,4 +1,5 @@
 {
+  "initializeCommand": "xhost +local:docker",
   "build": {
     "dockerfile": "Dockerfile",
     "options": [
