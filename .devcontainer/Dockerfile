@@ -6,7 +6,8 @@ RUN apt install -y --no-install-recommends \
     ca-certificates \
     git \
     python3 python3-matplotlib python3-scipy \
-    ssh
+    ssh \
+    vim
 
 ENV DISPLAY=:0
 
