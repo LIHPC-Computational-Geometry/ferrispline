@@ -9,6 +9,7 @@
     }
   },
   "runArgs": [
+    "--network=host",
     "--device=/dev/dri:/dev/dri"
   ],
   "mounts": [
@@ -21,8 +22,10 @@
   "customizations": {
     "vscode": {
       "extensions": [
+        "ms-azuretools.vscode-docker",
         "ms-python.python",
-        "ms-azuretools.vscode-docker"
+        "ms-vscode-remote.remote-containers",
+        "streetsidesoftware.code-spell-checker"
       ]
     }
   }
