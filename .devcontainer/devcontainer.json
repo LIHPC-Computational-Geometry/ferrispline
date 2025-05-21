@@ -3,7 +3,10 @@
     "dockerfile": "Dockerfile",
     "options": [
       "--network=host"
-    ]
+    ],
+    "args": {
+      "USER": "${localEnv:USER}"
+    }
   },
   "runArgs": [
     "--device=/dev/dri:/dev/dri"

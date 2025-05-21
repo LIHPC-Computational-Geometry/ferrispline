@@ -9,6 +9,8 @@ RUN apt install -y --no-install-recommends \
 
 ENV DISPLAY=:0
 
-RUN useradd -m -s /bin/bash stauffertm
+ARG USER
 
-USER stauffertm
+RUN useradd -m -s /bin/bash $USER
+
+USER $USER
