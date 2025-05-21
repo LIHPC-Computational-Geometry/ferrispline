@@ -54,7 +54,7 @@ def evalBezierCurve(control_points, weights, degree, sample=100):
     # :param weights: weights vector.
     # :param degree: Bezier basis degree.
     # :param sample: render sample.
-    
+
     t = np.linspace(0, 1, sample)
     nominator = np.zeros((sample, control_points.shape[1]))
     denominator = np.zeros(sample)
