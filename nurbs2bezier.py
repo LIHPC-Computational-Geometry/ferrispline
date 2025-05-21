@@ -141,7 +141,7 @@ def evalBspline(i, degree, nodes, u):
     return first_part + second_part
 
 
-# on l'ajoute pour les surfaces specifiquement
+# we add this specifically for surfaces
 def evalBsplineSurface(i, degree, nodes, parameter):
     n = len(nodes) - 1
     if degree == 0:
@@ -195,8 +195,8 @@ bezier_segments = []
 for i in range(degree, len(nodes) - degree - 1):
     if nodes[i] != nodes[i + 1]:
         first = i - degree
-        laste = i
-        if first < 0 or laste >= len(control_points):
+        last = i
+        if first < 0 or last >= len(control_points):
             continue
 
         S = computeConversionMatrix(nodes, degree, i)
@@ -204,8 +204,8 @@ for i in range(degree, len(nodes) - degree - 1):
         print(S)
         print()
 
-        local_points = control_points[first : laste + 1]
-        local_weights = weights[first : laste + 1]
+        local_points = control_points[first : last + 1]
+        local_weights = weights[first : last + 1]
 
         weighted_points = local_weights[:, np.newaxis] * local_points
         bezier_weighted_points = S @ weighted_points
@@ -231,7 +231,7 @@ for idx, segment in enumerate(bezier_segments):
         label=f"Edge {idx+1}",
     )
 
-# NURBS brute
+# NURBS
 ax.plot(
     nurbs_curve[:, 0],
     nurbs_curve[:, 1],
@@ -241,7 +241,7 @@ ax.plot(
     label="NURBS curve",
 )
 
-# Points de contrôle
+# Control points
 ax.plot(
     control_points[:, 0],
     control_points[:, 1],
