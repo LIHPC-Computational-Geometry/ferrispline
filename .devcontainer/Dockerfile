@@ -2,17 +2,17 @@ FROM ubuntu:noble-20250404 AS base
 
 RUN apt update
 
-FROM base AS python
+FROM base AS gitlabci
 
 RUN apt install -y --no-install-recommends \
+    pre-commit \
     python3 python3-matplotlib python3-pytest python3-scipy
 
-FROM python AS devcontainer
+FROM gitlabci AS devcontainer
 
 RUN apt install -y --no-install-recommends \
     ca-certificates \
     git \
-    pre-commit \
     ssh \
     vim
 
