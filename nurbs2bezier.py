@@ -172,109 +172,89 @@ def evalBsplineSurface(i, degree, nodes, parameter):
     return first_part + second_part
 
 
-nodes = [0, 0, 0, 0, 1 / 5, 2 / 5, 2 / 5, 3 / 5, 3 / 5, 3 / 5, 1, 1, 1, 1]
+def figure(degree, nodes, control_points, weights):
+    bezier_segments = []
 
-degree = 3
+    for i in range(degree, len(nodes) - degree - 1):
+        if nodes[i] != nodes[i + 1]:
+            first = i - degree
+            last = i
+            if first < 0 or last >= len(control_points):
+                continue
 
-control_points = np.array(
-    [
-        [0, 6, 0],
-        [1, 10, 0],
-        [5, 12, 0],
-        [9, 0, 0],
-        [8, 3, 0],
-        [5, 1.5, 0],
-        [0, 0, 0],
-        [2, -2, 0],
-        [8, -2, 0],
-        [10, 0, 0],
-    ]
-)
+            S = computeConversionMatrix(nodes, degree, i)
+            print(f"Matrix S for interval {i} :")
+            print(S)
+            print()
 
-weights = np.array([1, 2, 2, 1, 0.5, 0.5, 1, 1, 2, 1])
+            local_points = control_points[first : last + 1]
+            local_weights = weights[first : last + 1]
 
-bezier_segments = []
+            weighted_points = local_weights[:, np.newaxis] * local_points
+            bezier_weighted_points = S @ weighted_points
+            bezier_weights = S @ local_weights
 
-for i in range(degree, len(nodes) - degree - 1):
-    if nodes[i] != nodes[i + 1]:
-        first = i - degree
-        last = i
-        if first < 0 or last >= len(control_points):
-            continue
+            bezier_points = bezier_weighted_points / bezier_weights[:, np.newaxis]
 
-        S = computeConversionMatrix(nodes, degree, i)
-        print(f"Matrix S for interval {i} :")
-        print(S)
-        print()
+            curve = evalBezierCurve(bezier_points, bezier_weights, degree)
+            bezier_segments.append(curve)
 
-        local_points = control_points[first : last + 1]
-        local_weights = weights[first : last + 1]
+    nurbs_curve = evalNURBSCurve(nodes, control_points, weights, degree)
 
-        weighted_points = local_weights[:, np.newaxis] * local_points
-        bezier_weighted_points = S @ weighted_points
-        bezier_weights = S @ local_weights
+    fig = plt.figure(figsize=(12, 10))
+    ax = fig.add_subplot(111, projection="3d")
+    colors = cm.get_cmap("tab10", len(bezier_segments))
 
-        bezier_points = bezier_weighted_points / bezier_weights[:, np.newaxis]
+    for idx, segment in enumerate(bezier_segments):
+        ax.plot(
+            segment[:, 0],
+            segment[:, 1],
+            segment[:, 2],
+            color=colors(idx),
+            label=f"Edge {idx+1}",
+        )
 
-        curve = evalBezierCurve(bezier_points, bezier_weights, degree)
-        bezier_segments.append(curve)
-
-nurbs_curve = evalNURBSCurve(nodes, control_points, weights, degree)
-
-fig = plt.figure(figsize=(12, 10))
-ax = fig.add_subplot(111, projection="3d")
-colors = cm.get_cmap("tab10", len(bezier_segments))
-
-for idx, segment in enumerate(bezier_segments):
+    # NURBS
     ax.plot(
-        segment[:, 0],
-        segment[:, 1],
-        segment[:, 2],
-        color=colors(idx),
-        label=f"Edge {idx+1}",
+        nurbs_curve[:, 0],
+        nurbs_curve[:, 1],
+        nurbs_curve[:, 2],
+        "k--",
+        linewidth=2,
+        label="NURBS curve",
     )
 
-# NURBS
-ax.plot(
-    nurbs_curve[:, 0],
-    nurbs_curve[:, 1],
-    nurbs_curve[:, 2],
-    "k--",
-    linewidth=2,
-    label="NURBS curve",
-)
+    # Control points
+    ax.plot(
+        control_points[:, 0],
+        control_points[:, 1],
+        control_points[:, 2],
+        "ks--",
+        label="Control points",
+    )
 
-# Control points
-ax.plot(
-    control_points[:, 0],
-    control_points[:, 1],
-    control_points[:, 2],
-    "ks--",
-    label="Control points",
-)
+    # u_vals = np.linspace(nodes[degree], nodes[-degree - 1], 1000)
+    x_vals = []
+    y_vals = []
+    z_vals = []
+    for u in nodes[degree:-degree]:
+        numerator = np.zeros(control_points.shape[1])
+        denominator = 0.0
+        for i in range(len(control_points)):
+            N = evalBspline(i, degree, nodes, u)
+            numerator += weights[i] * N * control_points[i]
+            denominator += weights[i] * N
+        point = numerator / denominator
+        x_vals.append(point[0])
+        y_vals.append(point[1])
+        z_vals.append(point[2])
 
-u_vals = np.linspace(nodes[degree], nodes[-degree - 1], 1000)
-x_vals = []
-y_vals = []
-z_vals = []
-for u in nodes[degree:-degree]:
-    numerator = np.zeros(control_points.shape[1])
-    denominator = 0.0
-    for i in range(len(control_points)):
-        N = evalBspline(i, degree, nodes, u)
-        numerator += weights[i] * N * control_points[i]
-        denominator += weights[i] * N
-    point = numerator / denominator
-    x_vals.append(point[0])
-    y_vals.append(point[1])
-    z_vals.append(point[2])
+    ax.scatter(x_vals, y_vals, z_vals, color="red", s=50, label="Bezier points")
 
-ax.scatter(x_vals, y_vals, z_vals, color="red", s=50, label="Bezier points")
-
-ax.set_title("NURBS to Bezier")
-ax.set_xlabel("X")
-ax.set_ylabel("Y")
-ax.set_zlabel("Z")
-ax.legend()
-ax.grid(True)
-plt.show()
+    ax.set_title("NURBS to Bezier")
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+    ax.set_zlabel("Z")
+    ax.legend()
+    ax.grid(True)
+    plt.savefig('segment.png')

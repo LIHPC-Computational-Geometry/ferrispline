@@ -5,7 +5,7 @@ RUN apt update
 RUN apt install -y --no-install-recommends \
     ca-certificates \
     git \
-    python3 python3-matplotlib python3-scipy \
+    python3 python3-matplotlib python3-pytest python3-scipy \
     ssh \
     vim
 
