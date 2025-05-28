@@ -5,6 +5,7 @@ RUN apt update
 FROM base AS gitlabci
 
 RUN apt install -y --no-install-recommends \
+    git \
     pre-commit \
     python3 python3-matplotlib python3-pytest python3-scipy
 
@@ -12,7 +13,6 @@ FROM gitlabci AS devcontainer
 
 RUN apt install -y --no-install-recommends \
     ca-certificates \
-    git \
     ssh \
     vim
 
