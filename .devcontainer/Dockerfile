@@ -12,6 +12,7 @@ FROM python AS devcontainer
 RUN apt install -y --no-install-recommends \
     ca-certificates \
     git \
+    pre-commit \
     ssh \
     vim
 

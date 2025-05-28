@@ -257,4 +257,4 @@ def figure(degree, nodes, control_points, weights):
     ax.set_zlabel("Z")
     ax.legend()
     ax.grid(True)
-    plt.savefig('segment.png')
+    plt.savefig("segment.png")

@@ -2,6 +2,7 @@ import numpy as np
 from matplotlib.testing.compare import compare_images
 from nurbs2bezier import figure
 
+
 def test_segment():
 
     nodes = [0, 0, 0, 0, 1 / 5, 2 / 5, 2 / 5, 3 / 5, 3 / 5, 3 / 5, 1, 1, 1, 1]
@@ -27,4 +28,4 @@ def test_segment():
 
     figure(degree=degree, nodes=nodes, control_points=control_points, weights=weights)
 
-    assert compare_images('segment_ref.png','segment.png', 0.001) == None
+    assert compare_images("segment_ref.png", "segment.png", 0.001) == None

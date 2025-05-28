@@ -12,3 +12,12 @@ workflow:
 pytest:
   script:
     - pytest
+
+precommit:
+  script:
+    - pre-commit run
+
+precommitall:
+  script:
+    - pre-commit run --all
+  allow_failure: true
