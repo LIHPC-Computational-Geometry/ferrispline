@@ -12,3 +12,5 @@ RUN apt install -y --no-install-recommends \
 RUN groupadd --gid 1001 vscode
 
 RUN useradd --uid 1001 --gid 1001 -m -s /bin/bash vscode
+
+USER vscode

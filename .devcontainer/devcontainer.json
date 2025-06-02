@@ -6,25 +6,8 @@
     ]
   },
   "runArgs": [
-    // "--device=/dev/dri:/dev/dri",
     "--network=host"
   ],
-  // "mounts": [
-  //   {
-  //     "source": "/tmp/.X11-unix",
-  //     "target": "/tmp/.X11-unix",
-  //     "type": "bind"
-  //   }
-  // ],
-  // "remoteEnv": {
-  //   "DISPLAY": ":0"
-  // },
-  "containerUser": "vscode",
-  "remoteUser": "vscode",
-  "updateRemoteUserUID": true,
-  "containerEnv": {
-    "HOME": "/home/vscode"
-  },
   "customizations": {
     "vscode": {
       "extensions": [
