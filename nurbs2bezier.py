@@ -52,10 +52,15 @@ def evalBezierCurve(control_points, weights, degree, sample=100):
 
         # Math: \text{curve}(t) = \frac{1}{\sum_{i=0}^{\text{degree}} \text{weights}[i] \begin{pmatrix} \text{degree} \\ i \end{pmatrix} t^{i} (1 - t)^{(\text{degree} - i)}} \sum_{i=0}^{\text{degree}} \text{weights}[i] \begin{pmatrix} \text{degree} \\ i \end{pmatrix} t^{i} (1 - t)^{(\text{degree} - i)} \text{control_points}[i]
 
-    :param control_points: control points vector.
-    :param weights: weights vector.
-    :param degree: Bezier basis degree.
-    :param sample: render sample.
+    Parameters
+    ----------
+    control_points : control points vector.
+
+    weights : weights vector.
+
+    degree : Bezier basis degree.
+
+    sample : render sample.
     """
 
     t = np.linspace(0, 1, sample)

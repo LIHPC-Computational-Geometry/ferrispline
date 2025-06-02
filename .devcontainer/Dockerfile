@@ -13,6 +13,7 @@ FROM gitlabci AS devcontainer
 
 RUN apt install -y --no-install-recommends \
     ca-certificates \
+    less \
     ssh \
     vim
 
