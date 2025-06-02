@@ -17,10 +17,8 @@ RUN apt install -y --no-install-recommends \
     ssh \
     vim
 
-ENV DISPLAY=:0
+RUN groupadd --gid 1001 vscode
 
-ARG USER
+RUN useradd --uid 1001 --gid 1001 -m -s /bin/bash vscode
 
-RUN useradd -m -s /bin/bash $USER
-
-USER $USER
+USER vscode
