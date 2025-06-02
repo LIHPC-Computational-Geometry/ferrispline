@@ -112,12 +112,12 @@ def evalNURBSSurface(
     nb_points_u=50,
     nb_points_v=50,
 ):
-    u_min = nodes[degree_u]
-    u_max = nodes[-degree_u - 1]
+    u_min = nodes_u[degree_u]
+    u_max = nodes_u[-degree_u - 1]
     u_vals = np.linspace(u_min, u_max, nb_points_u)
 
-    v_min = nodes[degree_v]
-    v_max = nodes[-degree_v - 1]
+    v_min = nodes_v[degree_v]
+    v_max = nodes_v[-degree_v - 1]
     v_vals = np.linspace(v_min, v_max, nb_points_v)
 
     surface = np.zeros((nb_points_u, nb_points_v, 3))
