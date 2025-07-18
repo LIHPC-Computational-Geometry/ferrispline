@@ -1,225 +1,272 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 from scipy.special import comb
 import matplotlib.cm as cm
 
 
-def algo1(noeuds, degre, indice_intervalle):
+def computeConversionMatrix(nodes, degree, interval_index):
     S = np.eye(1)
-    for k in range(1, degre+1):
-        debut = max(0, indice_intervalle - k)
-        fin = min(len(noeuds), indice_intervalle + k + 2)
-        noeuds_locaux = noeuds[debut:fin]
-        
-        A = np.zeros((k, k+1))
-        B = np.zeros((k, k+1))
-        
+    for k in range(1, degree + 1):
+        begin = max(0, interval_index - k)
+        end = min(len(nodes), interval_index + k + 2)
+        local_nodes = nodes[begin:end]
+
+        A = np.zeros((k, k + 1))
+        B = np.zeros((k, k + 1))
+
         for l in range(k):
             idx = l + 1
-            denominateur = noeuds_locaux[idx+k] - noeuds_locaux[idx]
-            alpha = (noeuds_locaux[k] - noeuds_locaux[idx]) / denominateur if denominateur != 0 else 0.0
-            beta = (noeuds_locaux[k+1] - noeuds_locaux[idx]) / denominateur if denominateur != 0 else 0.0
-            
+            denominator = local_nodes[idx + k] - local_nodes[idx]
+            alpha = (
+                (local_nodes[k] - local_nodes[idx]) / denominator
+                if denominator != 0
+                else 0.0
+            )
+            beta = (
+                (local_nodes[k + 1] - local_nodes[idx]) / denominator
+                if denominator != 0
+                else 0.0
+            )
+
             A[l, l] = 1 - alpha
-            A[l, l+1] = alpha
+            A[l, l + 1] = alpha
             B[l, l] = 1 - beta
-            B[l, l+1] = beta
-        
-        S_haut = S @ A
-        S_bas = S[-1:] @ B
-        S = np.vstack([S_haut, S_bas])
-    
+            B[l, l + 1] = beta
+
+        S_up = S @ A
+        S_down = S[-1:] @ B
+        S = np.vstack([S_up, S_down])
+
     return S
 
-def bernstein(i, degre, t):
-    return comb(degre, i) * (t**i) * (1 - t)**(degre-i)
 
-def evaluer_courbe_bezier(points_controle, poids, degre, nb_points=100):
+def bernstein(i, degree, t):
+    return comb(degree, i) * (t**i) * (1 - t) ** (degree - i)
+
+
+def evalBezierCurve(control_points, weights, degree, nb_points=100):
     t = np.linspace(0, 1, nb_points)
-    courbe = np.zeros((nb_points, points_controle.shape[1]))
+    curve = np.zeros((nb_points, control_points.shape[1]))
 
-    for i in range(degre+1):
-        B = bernstein(i, degre, t)
-        WB = poids[i] * B
-        contribution = WB[:, np.newaxis] * points_controle[i]
-        courbe += contribution
+    for i in range(degree + 1):
+        B = bernstein(i, degree, t)
+        WB = weights[i] * B
+        temp = WB[:, np.newaxis] * control_points[i]
+        curve += temp
 
-    denominateur = np.zeros(nb_points)
+    denominator = np.zeros(nb_points)
 
-    for i in range(degre+1):
-        B = bernstein(i, degre, t)
-        WB = poids[i] * B
-        denominateur += WB
+    for i in range(degree + 1):
+        B = bernstein(i, degree, t)
+        WB = weights[i] * B
+        denominator += WB
 
-    courbe = courbe / denominateur[:, np.newaxis]
-    return courbe
+    curve = curve / denominator[:, np.newaxis]
+    return curve
 
-def eval_courbe_nurbs(noeuds, points_controle, poids, degre, nb_points=300):
-    u_min = noeuds[degre]
-    u_max = noeuds[-degre-1]
+
+def evalNURBSCurve(nodes, control_points, weights, degree, nb_points=300):
+    u_min = nodes[degree]
+    u_max = nodes[-degree - 1]
     u_vals = np.linspace(u_min, u_max, nb_points)
-    courbe = np.zeros((nb_points, points_controle.shape[1]))
-    
+    curve = np.zeros((nb_points, control_points.shape[1]))
+
     for idx, u in enumerate(u_vals):
-        numerateur = np.zeros(points_controle.shape[1])
-        denominateur = 0.0
-        for i in range(len(points_controle)):
-            N = R_de_Boor(i, degre, noeuds, u)
-            numerateur += poids[i] * N * points_controle[i]
-            denominateur += poids[i] * N
-        courbe[idx] = numerateur / denominateur
-    return courbe
+        numerator = np.zeros(control_points.shape[1])
+        denominator = 0.0
+        for i in range(len(control_points)):
+            N = evalBspline(i, degree, nodes, u)
+            numerator += weights[i] * N * control_points[i]
+            denominator += weights[i] * N
+        curve[idx] = numerator / denominator
+    return curve
 
 
-def eval_surface_nurbs(noeuds_u, noeuds_v, points_controle, poids, degre_u, degre_v, nb_points_u=50, nb_points_v=50):
-    u_min = noeuds[degre_u]
-    u_max = noeuds[-degre_u-1]
+def evalNURBSSurface(
+    nodes_u,
+    nodes_v,
+    control_points,
+    weights,
+    degree_u,
+    degree_v,
+    nb_points_u=50,
+    nb_points_v=50,
+):
+    u_min = nodes[degree_u]
+    u_max = nodes[-degree_u - 1]
     u_vals = np.linspace(u_min, u_max, nb_points_u)
 
-    v_min = noeuds[degre_v]
-    v_max = noeuds[-degre_v-1]
+    v_min = nodes[degree_v]
+    v_max = nodes[-degree_v - 1]
     v_vals = np.linspace(v_min, v_max, nb_points_v)
 
     surface = np.zeros((nb_points_u, nb_points_v, 3))
 
     for iu, u in enumerate(u_vals):
         for iv, v in enumerate(v_vals):
-            numerateur = np.zeros(3)
-            denominateur = 0.0
-            for i in range(points_controle.shape[0]):
-                Ni = R_de_Boor_surface(i, degre_u, noeuds_u, u)
-                for j in range(points_controle.shape[1]):
-                    Mj = R_de_Boor_surface(j, degre_v, noeuds_v, v)
-                    poids_ij = poids[i, j]
-                    NMi_w = Ni * Mj * poids_ij
-                    numerateur += NMi_w * points_controle[i, j]
-                    denominateur += NMi_w
-            surface[iu, iv] = numerateur / denominateur if denominateur != 0 else numerateur
+            numerator = np.zeros(3)
+            denominator = 0.0
+            for i in range(control_points.shape[0]):
+                Ni = evalBsplineSurface(i, degree_u, nodes_u, u)
+                for j in range(control_points.shape[1]):
+                    Mj = evalBsplineSurface(j, degree_v, nodes_v, v)
+                    weights_ij = weights[i, j]
+                    NMi_w = Ni * Mj * weights_ij
+                    numerator += NMi_w * control_points[i, j]
+                    denominator += NMi_w
+            surface[iu, iv] = numerator / denominator if denominator != 0 else numerator
     return surface
 
 
-def R_de_Boor(i, degre, noeuds, u):
-    n = len(noeuds) - 1
-    if degre == 0:
+def evalBspline(i, degree, nodes, u):
+    n = len(nodes) - 1
+    if degree == 0:
         if i >= n:
             return 0.0
-        return 1.0 if noeuds[i] <= u < noeuds[i+1] else 0.0
-    terme1 = 0.0
-    terme2 = 0.0
-    if (i + degre) < n:
-        denom1 = noeuds[i+degre] - noeuds[i]
+        return 1.0 if nodes[i] <= u < nodes[i + 1] else 0.0
+    first_part = 0.0
+    second_part = 0.0
+    if (i + degree) < n:
+        denom1 = nodes[i + degree] - nodes[i]
         if denom1 != 0:
-            terme1 = (u - noeuds[i]) / denom1 * R_de_Boor(i, degre-1, noeuds, u)
-    if (i + degre + 1) < n:
-        denom2 = noeuds[i+degre+1] - noeuds[i+1]
+            first_part = (u - nodes[i]) / denom1 * evalBspline(i, degree - 1, nodes, u)
+    if (i + degree + 1) < n:
+        denom2 = nodes[i + degree + 1] - nodes[i + 1]
         if denom2 != 0:
-            terme2 = (noeuds[i+degre+1] - u) / denom2 * R_de_Boor(i+1, degre-1, noeuds, u)
-    return terme1 + terme2
+            second_part = (
+                (nodes[i + degree + 1] - u)
+                / denom2
+                * evalBspline(i + 1, degree - 1, nodes, u)
+            )
+    return first_part + second_part
 
-#on l'ajoute pour les surfaces specifiquement
-def R_de_Boor_surface(i, degre, noeuds, parametre):
-    n = len(noeuds) - 1
-    if degre == 0:
+
+# we add this specifically for surfaces
+def evalBsplineSurface(i, degree, nodes, parameter):
+    n = len(nodes) - 1
+    if degree == 0:
         if i >= n:
             return 0.0
-        return 1.0 if noeuds[i] <= parametre < noeuds[i+1] else 0.0
-    terme1 = 0.0
-    terme2 = 0.0
-    if (i + degre) < n:
-        denom1 = noeuds[i+degre] - noeuds[i]
+        return 1.0 if nodes[i] <= parameter < nodes[i + 1] else 0.0
+    first_part = 0.0
+    second_part = 0.0
+    if (i + degree) < n:
+        denom1 = nodes[i + degree] - nodes[i]
         if denom1 != 0:
-            terme1 = (parametre - noeuds[i]) / denom1 * R_de_Boor_surface(i, degre-1, noeuds, parametre)
-    if (i + degre + 1) < n:
-        denom2 = noeuds[i+degre+1] - noeuds[i+1]
+            first_part = (
+                (parameter - nodes[i])
+                / denom1
+                * evalBsplineSurface(i, degree - 1, nodes, parameter)
+            )
+    if (i + degree + 1) < n:
+        denom2 = nodes[i + degree + 1] - nodes[i + 1]
         if denom2 != 0:
-            terme2 = (noeuds[i+degre+1] - parametre) / denom2 * R_de_Boor_surface(i+1, degre-1, noeuds, parametre)
-    return terme1 + terme2
+            second_part = (
+                (nodes[i + degree + 1] - parameter)
+                / denom2
+                * evalBsplineSurface(i + 1, degree - 1, nodes, parameter)
+            )
+    return first_part + second_part
 
 
+nodes = [0, 0, 0, 0, 1 / 5, 2 / 5, 2 / 5, 3 / 5, 3 / 5, 3 / 5, 1, 1, 1, 1]
 
-noeuds = [0, 0, 0, 0, 1/5, 2/5, 2/5, 3/5, 3/5, 3/5, 1, 1, 1, 1]
+degree = 3
 
-degre = 3
+control_points = np.array(
+    [
+        [0, 6, 0],
+        [1, 10, 0],
+        [5, 12, 0],
+        [9, 0, 0],
+        [8, 3, 0],
+        [5, 1.5, 0],
+        [0, 0, 0],
+        [2, -2, 0],
+        [8, -2, 0],
+        [10, 0, 0],
+    ]
+)
 
-points_controle = np.array([
-    [0, 6, 0],
-    [1, 10, 0],
-    [5, 12, 0],
-    [9, 0, 0],
-    [8, 3, 0],
-    [5, 1.5, 0],
-    [0, 0, 0],
-    [2, -2, 0],
-    [8, -2, 0],
-    [10, 0, 0]
-])
+weights = np.array([1, 2, 2, 1, 0.5, 0.5, 1, 1, 2, 1])
 
-poids = np.array([1, 2, 2, 1, 0.5, 0.5, 1, 1, 2, 1])
+bezier_segments = []
 
-
-
-segments_bezier = []
-
-for i in range(degre, len(noeuds) - degre - 1):
-    if noeuds[i] != noeuds[i+1]:
-        premier = i - degre
-        dernier = i
-        if premier < 0 or dernier >= len(points_controle):
+for i in range(degree, len(nodes) - degree - 1):
+    if nodes[i] != nodes[i + 1]:
+        first = i - degree
+        last = i
+        if first < 0 or last >= len(control_points):
             continue
-        
-        S = algo1(noeuds, degre, i)
-        print(f"Matrice S pour l'intervalle {i} :")
+
+        S = computeConversionMatrix(nodes, degree, i)
+        print(f"Matrix S for interval {i} :")
         print(S)
         print()
-        
-        pts_locaux = points_controle[premier:dernier+1]
-        poids_locaux = poids[premier:dernier+1]
-        
-        pointC_pondere = poids_locaux[:, np.newaxis] * pts_locaux
-        bezier_PP = S @ pointC_pondere
-        bezier_poids = S @ poids_locaux
-        
-        bezier_pts = bezier_PP / bezier_poids[:, np.newaxis]
-        
-        courbe = evaluer_courbe_bezier(bezier_pts, bezier_poids, degre)
-        segments_bezier.append(courbe)
 
+        local_points = control_points[first : last + 1]
+        local_weights = weights[first : last + 1]
 
-courbe_nurbs = eval_courbe_nurbs(noeuds, points_controle, poids, degre)
+        weighted_points = local_weights[:, np.newaxis] * local_points
+        bezier_weighted_points = S @ weighted_points
+        bezier_weights = S @ local_weights
 
+        bezier_points = bezier_weighted_points / bezier_weights[:, np.newaxis]
 
+        curve = evalBezierCurve(bezier_points, bezier_weights, degree)
+        bezier_segments.append(curve)
 
-fig = plt.figure(figsize=(12,10))
-ax = fig.add_subplot(111, projection='3d')
-couleurs = cm.get_cmap('tab10', len(segments_bezier))
+nurbs_curve = evalNURBSCurve(nodes, control_points, weights, degree)
 
-for idx, segment in enumerate(segments_bezier):
-    ax.plot(segment[:,0], segment[:,1], segment[:,2], color=couleurs(idx), label=f'Edge {idx+1}')
+fig = plt.figure(figsize=(12, 10))
+ax = fig.add_subplot(111, projection="3d")
+colors = cm.get_cmap("tab10", len(bezier_segments))
 
-# NURBS brute
-ax.plot(courbe_nurbs[:,0], courbe_nurbs[:,1], courbe_nurbs[:,2], 'k--', linewidth=2, label='NURBS curve ')
+for idx, segment in enumerate(bezier_segments):
+    ax.plot(
+        segment[:, 0],
+        segment[:, 1],
+        segment[:, 2],
+        color=colors(idx),
+        label=f"Edge {idx+1}",
+    )
 
-# Points de contrôle
-ax.plot(points_controle[:,0], points_controle[:,1], points_controle[:,2], 'ks--', label="Control points")
+# NURBS
+ax.plot(
+    nurbs_curve[:, 0],
+    nurbs_curve[:, 1],
+    nurbs_curve[:, 2],
+    "k--",
+    linewidth=2,
+    label="NURBS curve",
+)
 
-u_vals = np.linspace(noeuds[degre], noeuds[-degre-1], 1000)
+# Control points
+ax.plot(
+    control_points[:, 0],
+    control_points[:, 1],
+    control_points[:, 2],
+    "ks--",
+    label="Control points",
+)
+
+u_vals = np.linspace(nodes[degree], nodes[-degree - 1], 1000)
 x_vals = []
 y_vals = []
 z_vals = []
-for u in noeuds[degre:-degre]:
-    numerateur = np.zeros(points_controle.shape[1])
-    denominateur = 0.0
-    for i in range(len(points_controle)):
-        N = R_de_Boor(i, degre, noeuds, u)
-        numerateur += poids[i] * N * points_controle[i]
-        denominateur += poids[i] * N
-    pt = numerateur / denominateur
-    x_vals.append(pt[0])
-    y_vals.append(pt[1])
-    z_vals.append(pt[2])
+for u in nodes[degree:-degree]:
+    numerator = np.zeros(control_points.shape[1])
+    denominator = 0.0
+    for i in range(len(control_points)):
+        N = evalBspline(i, degree, nodes, u)
+        numerator += weights[i] * N * control_points[i]
+        denominator += weights[i] * N
+    point = numerator / denominator
+    x_vals.append(point[0])
+    y_vals.append(point[1])
+    z_vals.append(point[2])
 
-ax.scatter(x_vals, y_vals, z_vals, color='red', s=50, label="Bézier points")
+ax.scatter(x_vals, y_vals, z_vals, color="red", s=50, label="Bézier points")
 
 ax.set_title("NURBS to Bézier")
 ax.set_xlabel("X")
