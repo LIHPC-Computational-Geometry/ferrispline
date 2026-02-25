@@ -1,24 +1,33 @@
-FROM ubuntu:noble-20250404 AS base
+FROM ubuntu:noble-20260113 AS base
 
-RUN apt update
+FROM base AS latest
 
-FROM base AS gitlabci
-
-RUN apt install -y --no-install-recommends \
+RUN apt update && \
+    apt install -y --no-install-recommends \
     git \
     pre-commit \
-    python3 python3-matplotlib python3-pytest python3-scipy
+    python3 \
+    python3-matplotlib \
+    python3-pytest \
+    python3-scipy && \
+    rm -rf /var/lib/apt/lists/*
 
-FROM gitlabci AS devcontainer
+FROM latest AS dev
 
-RUN apt install -y --no-install-recommends \
+RUN apt update && \
+    apt install -y --no-install-recommends \
     ca-certificates \
     less \
     ssh \
-    vim
+    vim && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN groupadd --gid 1001 vscode
+ENV DISPLAY=:0
 
-RUN useradd --uid 1001 --gid 1001 -m -s /bin/bash vscode
+ARG USER
 
-USER vscode
+RUN useradd -m -s /bin/bash ${USER}
+
+USER ${USER}
+
+WORKDIR /home/${USER}/

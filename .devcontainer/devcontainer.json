@@ -1,5 +1,8 @@
 {
   "build": {
+    "args": {
+      "USER": "${localEnv:USER}"
+    },
     "dockerfile": "Dockerfile",
     "options": [
       "--network=host"
