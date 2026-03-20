@@ -3,6 +3,7 @@ import numpy.typing as npt
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import sys
+import pyvista as pv
 from typing import Annotated
 from scipy.special import comb
 from enum import IntEnum
@@ -27,6 +28,50 @@ class Multiplicity3Degrees(IntEnum):
     CLAMPED = 4
 
 globals().update(Multiplicity3Degrees.__members__)
+
+def loadNURBSFromVTK(filepath: str) -> tuple[MatrixNx3, Vector, Vector, int]:
+    """Read a VTK file for extract all data
+
+    Args:
+        filepath (str): path of the vtk file
+
+    Returns:
+        tuple[MatrixNx3, Vector, Vector, int]: a tuple containing:
+        - a matrix size N*3 of controle points
+        - a vector of size N for the weights of these controle point
+        - a vector of size controle_point + degree + 1 with all knots
+        - an intager for the curve's degree 
+    """
+    try:
+        mesh = pv.read(filepath)
+    except Exception as e:
+        print(f"Error while reading the file: {e} ")
+    
+    controle_point: MatrixNx3 = np.array(mesh.points, dtype=np.float64)
+    print(f"POINT DATA: {mesh.point_data}\n")
+    print(f"FIELD DATA: {mesh.field_data}\n")
+    # TODO: used the conventional name into a vtk file use by paraview for exemple
+    if "weights" not in mesh.point_data:
+        # TODO: function for generate weights
+        print(f"Weights generation todo")
+        sys.exit(1)
+    ctrl_pt_weights: Vector = np.array(mesh.point_data["weights"], dtype=np.float64)
+
+    # TODO: used the conventional name into a vtk file use by paraview for exemple
+    if "knots" not in mesh.field_data:
+        # TODO: function for generate knot
+        print(f"Knot generation todo")
+        sys.exit(1)
+    knots: Vector = np.array(mesh.field_data["knots"], dtype=np.float64).flatten() # NOTE use flatten() because the return of field_data can be a 2D Matrix
+
+    degree: int = len(knots) - len(controle_point) - 1
+
+    if degree < 1:
+        print("Error: the number of controle point and knot are invalid: knots number = controle point number + degree + 1")
+        sys.exit(1)
+
+    return controle_point, ctrl_pt_weights, knots, degree
+
 
 def buildKnotVector(knot_definitions: list[tuple[float, int]]) -> list:
     knot_vector = []
@@ -380,41 +425,26 @@ def figure(degree: int, knots: list, control_points: MatrixNx3, ctrl_pt_weights:
 
     return fig
 
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: python nrubs2bezier.py <path_to_file.vtk>")
+        sys.exit(1)
+    
+    filepath: str = sys.argv[1]
 
-def article():
-    degree = 3
-    knots_definitions: list[tuple[float, int]] = [
-        (0.0, CLAMPED),
-        (1/5, SIMPLE),
-        (2/5, REDUSED),
-        (3/5, FULL),
-        (1, CLAMPED)
-    ]
+    print(f"Loading file: {filepath}...")
+    control_points, ctrl_pt_weights, knots, degree = loadNURBSFromVTK(filepath)
 
-    knots: list = buildKnotVector(knots_definitions)
+    print(f"Extraction success ! Curve of degree {degree} detected.")
 
-    control_points: MatrixNx3 = np.array(
-        [
-            [0, 6, 0],
-            [1, 10, 0],
-            [5, 12, 0],
-            [9, 0, 0],
-            [8, 3, 0],
-            [5, 1.5, 0],
-            [0, 0, 0],
-            [2, -2, 0],
-            [8, -2, 0],
-            [10, 0, 0],
-        ]
+    fig = figure(
+        degree=degree,
+        knots=knots,
+        control_points=control_points,
+        ctrl_pt_weights=ctrl_pt_weights,
     )
 
-    ctrl_pt_weights: Vector = np.array([1, 2, 2, 1, 0.5, 0.5, 1, 1, 2, 1])
-
-    return figure(
-        knots=knots, degree=degree, control_points=control_points, ctrl_pt_weights=ctrl_pt_weights
-    )
-
+    plt.show()
 
 if __name__ == "__main__":
-    article()
-    plt.show()
+    main()

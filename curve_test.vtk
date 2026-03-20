@@ -1,0 +1,34 @@
+# vtk DataFile Version 3.0
+NURBS curve data
+ASCII
+DATASET POLYDATA
+
+FIELD_DATA nurbs_data 1
+knots 14 1 float
+0.0 0.0 0.0 0.0 0.2 0.4 0.4 0.6 0.6 0.6 1.0 1.0 1.0 1.0
+
+POINTS 10 float
+0.0 6.0 0.0
+1.0 10.0 0.0
+5.0 12.0 0.0
+9.0 0.0 0.0
+8.0 3.0 0.0
+5.0 1.5 0.0
+0.0 0.0 0.0
+2.0 -2.0 0.0
+8.0 -2.0 0.0
+10.0 0.0 0.0
+
+POINT_DATA 10
+SCALARS weights float 1
+LOOKUP_TABLE default
+1.0
+2.0
+2.0
+1.0
+0.5
+0.5
+1.0
+1.0
+2.0
+1.0
