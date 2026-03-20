@@ -1,9 +1,24 @@
 import numpy as np
+import numpy.typing as npt
 import matplotlib.pyplot as plt
-from scipy.special import comb
 import matplotlib as mpl
 import sys
+from typing import Annotated
+from scipy.special import comb
 from enum import IntEnum
+
+# array of floating numbers
+FloatArray = npt.NDArray[np.float64]
+
+# --- 1D (Vector) ---
+Vector3 = Annotated[FloatArray, "3"]      # Fixed vector (eg: a spatial coordinate x, y, z)
+Vector  = Annotated[FloatArray, "N"]      # Dynamic size vector (e.g. nodes, weights, u_vals)
+
+# --- 2D (Matrix) ---
+MatrixNx3 = Annotated[FloatArray, "N, 3"] # Matrix with 3 columns (eg: table of points)
+MatrixNxN = Annotated[FloatArray, "N, N"] # Square matrix (e.g. insertion matrix)
+MatrixMxN = Annotated[FloatArray, "M, N"] # Rectangular matrix (e.g. basis of evaluation)
+
 
 class Multiplicity3Degrees(IntEnum):
     SIMPLE = 1
@@ -13,14 +28,14 @@ class Multiplicity3Degrees(IntEnum):
 
 globals().update(Multiplicity3Degrees.__members__)
 
-def buildKnotVector(knot_definitions):
+def buildKnotVector(knot_definitions: list[tuple[float, int]]) -> list:
     knot_vector = []
     for value, multiplicity in knot_definitions:
         knot_vector.extend([value] * multiplicity)
     return knot_vector
 
 # NOTE segment_index is increment number `i` of the `figure` function with range (3, 10)
-def computeKnotInsertionMatrix(knots, degree: int, segment_index: int) -> np.ndarray:
+def computeKnotInsertionMatrix(knots: list, degree: int, segment_index: int) -> MatrixNxN:
     r"""Creation of a knot insertion matrix using Boehm's knot insertion algorithm.
 
         This conversion matrix allows the transformation of a local segment of a 
@@ -69,31 +84,31 @@ def computeKnotInsertionMatrix(knots, degree: int, segment_index: int) -> np.nda
             knot_insertion_matrix (array_like): Matrix of size (degree + 1) x (degree + 1).
     """
 
-    extraction_matrix: np.ndarray = np.eye(1) # NOTE 2D Identity Matrice creation 1*1
+    extraction_matrix: MatrixNxN = np.eye(1) # NOTE 2D Identity Matrice creation 1*1
 
     for degree_step in range(1, degree + 1):
         start_idx: int = max(0, segment_index - degree_step)
         end_idx: int = min(len(knots), segment_index + degree_step + 2)
-        local_knots: np.ndarray = knots[start_idx:end_idx]
+        local_knots: Vector = knots[start_idx:end_idx]
 
-        tmp_matrix_A: np.ndarray = np.zeros((degree_step, degree_step + 1))
-        tmp_matrix_B: np.ndarray = np.zeros((degree_step, degree_step + 1))
+        tmp_matrix_A: MatrixNxN = np.zeros((degree_step, degree_step + 1))
+        tmp_matrix_B: MatrixNxN = np.zeros((degree_step, degree_step + 1))
 
         for row in range(degree_step):
             knot_start: int = row + 1
             knot_end: int = knot_start + degree_step
             
             # NOTE: The total distance between our two anchor nodes
-            distance: int = (local_knots[knot_end] - local_knots[knot_start])
+            distance: float = (local_knots[knot_end] - local_knots[knot_start])
 
             if distance != 0:
                 # NOTE: ratio d'interpolation d'insertion du noeud de début du segment
-                alpha: int = (local_knots[degree_step] - local_knots[knot_start]) / distance
+                alpha: float = (local_knots[degree_step] - local_knots[knot_start]) / distance
                 # NOTE: ratio d'interpolation d'insertion du noeud de fin du segment
-                beta: int = (local_knots[degree_step + 1] - local_knots[knot_start]) / distance
+                beta: float = (local_knots[degree_step + 1] - local_knots[knot_start]) / distance
             else:
-                alpha: int = 0.0
-                beta: int = 0.0
+                alpha: float = 0.0
+                beta: float = 0.0
 
             tmp_matrix_A[row, row] = 1 - alpha 
             tmp_matrix_A[row, row + 1] = alpha      
@@ -101,19 +116,19 @@ def computeKnotInsertionMatrix(knots, degree: int, segment_index: int) -> np.nda
             tmp_matrix_B[row, row] = 1 - beta  
             tmp_matrix_B[row, row + 1] = beta
 
-        upper_half: np.ndarray = extraction_matrix @ tmp_matrix_A  
-        lower_half: np.ndarray = extraction_matrix[-1:] @ tmp_matrix_B
+        upper_half: MatrixNxN = extraction_matrix @ tmp_matrix_A  
+        lower_half: MatrixNxN = extraction_matrix[-1:] @ tmp_matrix_B
 
         extraction_matrix = np.vstack([upper_half, lower_half])
 
     return extraction_matrix
 
 
-def bernstein(v: int, degree: int, t: np.ndarray) -> np.ndarray:
+def bernstein(v: int, degree: int, t: Vector) -> Vector:
     return comb(degree, v) * pow(t, v) * pow((1 - t), (degree - v))
 
 
-def rationalBasisBezierFunction(weights: np.ndarray, degree: int, sample: int) -> np.ndarray:
+def rationalBasisBezierFunction(weights: Vector, degree: int, sample: int) -> MatrixMxN:
     r""" Calcule the rational basis function
 
         This function corresponds to the first part of the mathematical formula, 
@@ -128,17 +143,17 @@ def rationalBasisBezierFunction(weights: np.ndarray, degree: int, sample: int) -
             np.ndarray: a matrix of (degree + 1) * sample size
     """
 
-    t: np.ndarray = np.linspace(0, 1, sample)
-    weighted_strength: np.ndarray = np.zeros((degree + 1, sample))
+    t: Vector = np.linspace(0, 1, sample)
+    weighted_strength: MatrixMxN = np.zeros((degree + 1, sample))
     for i in range(degree + 1):
-        force: np.ndarray = bernstein(i, degree, t)
+        force: Vector = bernstein(i, degree, t)
         weighted_strength += weights[i] * force
-    denominator: np.ndarray = np.sum(weighted_strength, axis=0)
+    denominator: Vector = np.sum(weighted_strength, axis=0)
     return weighted_strength / denominator
 
 
 
-def evalBezierCurve(control_points: np.ndarray, weights: np.ndarray, degree: int, sample: int=100) -> np.ndarray:
+def evalBezierCurve(control_points: MatrixNx3, weights: Vector, degree: int, sample: int=100) -> MatrixNx3:
     r"""
         Evaluates rational Bezier curve and returns it.
 
@@ -156,12 +171,12 @@ def evalBezierCurve(control_points: np.ndarray, weights: np.ndarray, degree: int
             curve (array_like): Rational Bezier curve.
     """
 
-    rational_basis: np.ndarray = rationalBasisBezierFunction(weights, degree, sample)
-    transposed_rational_basis: np.ndarray = rational_basis.T
-    curve_points: np.ndarray = transposed_rational_basis @ control_points
+    rational_basis: MatrixMxN = rationalBasisBezierFunction(weights, degree, sample)
+    transposed_rational_basis: MatrixMxN = rational_basis.T
+    curve_points: MatrixNx3 = transposed_rational_basis @ control_points
     return curve_points
 
-def bezierCurves(knots: np.ndarray, control_points: np.ndarray, ctrl_pt_weights: np.ndarray, degree: int) -> list:
+def bezierCurves(knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vector, degree: int) -> list:
     bezier_segments: list = []
     for i in range(degree, len(knots) - degree - 1):
         if knots[i] == knots[i + 1]:
@@ -173,42 +188,42 @@ def bezierCurves(knots: np.ndarray, control_points: np.ndarray, ctrl_pt_weights:
         if ctrl_pt_start_idx < 0 or ctrl_pt_end_idx >= len(control_points):
             continue
 
-        knot_insertion_matrix: np.ndarray = computeKnotInsertionMatrix(knots, degree, i)
+        knot_insertion_matrix: MatrixNxN = computeKnotInsertionMatrix(knots, degree, i)
         
         # NOTE: correspond aux points et poids de l'intervalle ou l'on souhaite insérer le nouveau point 
-        local_ctrl_pt: np.ndarray = control_points[ctrl_pt_start_idx : ctrl_pt_end_idx + 1]
-        local_ctrl_pt_weights: np.ndarray = ctrl_pt_weights[ctrl_pt_start_idx : ctrl_pt_end_idx + 1]
+        local_ctrl_pt: Vector = control_points[ctrl_pt_start_idx : ctrl_pt_end_idx + 1]
+        local_ctrl_pt_weights: Vector = ctrl_pt_weights[ctrl_pt_start_idx : ctrl_pt_end_idx + 1]
 
 
         # NOTE: Coordonnées homogènes des points de l'intervalle (matrice contenant n + 1 vecteur de coordonnées spatial multiplié par leur poids np.zeros(n+1, 3))
-        weighted_points: np.ndarray = local_ctrl_pt_weights[:, np.newaxis] * local_ctrl_pt
+        weighted_points: MatrixNx3 = local_ctrl_pt_weights[:, np.newaxis] * local_ctrl_pt
         
         # NOTE: coordonnées homogènes dont l'influence est modifier par la matrice d'insertion (matrice contenant n + 1 vecteur de coordonnées spatial multiplié par leur poids)
-        bezier_weighted_points: np.ndarray = knot_insertion_matrix @ weighted_points
+        bezier_weighted_points: MatrixNx3 = knot_insertion_matrix @ weighted_points
         # NOTE: Nouveaux poids des points de contrôle de Bézier, calculés par la matrice d'insertion (vecteur 1D contenant n + 1 valeurs scalaires)
-        bezier_weights: np.ndarray = knot_insertion_matrix @ local_ctrl_pt_weights
+        bezier_weights: Vector = knot_insertion_matrix @ local_ctrl_pt_weights
 
         # NOTE: Supprime l'influence des poids ajoutés artificiellement dans weighted_points par une division, pour obtenir la matrice finale des n+1 vecteurs de coordonnées spatiales 3D (les points de contrôle de Bézier réels).
-        bezier_points: np.ndarray = bezier_weighted_points / bezier_weights[:, np.newaxis]
+        bezier_points: MatrixNx3 = bezier_weighted_points / bezier_weights[:, np.newaxis]
 
-        curve: np.ndarray = evalBezierCurve(bezier_points, bezier_weights, degree)
+        curve: MatrixNx3 = evalBezierCurve(bezier_points, bezier_weights, degree)
         bezier_segments.append(curve)
     return bezier_segments
 
 
-def evalNURBSCurve(knots: np.ndarray, control_points: np.ndarray, ctrl_pt_weights: np.ndarray, degree: int, sample: int=300) -> np.ndarray:
+def evalNURBSCurve(knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vector, degree: int, sample: int=300) -> MatrixNx3:
     u_min: int = knots[degree] # NOTE: Start of the valid parameter domain (ensures partition of unity)
     u_max: int = knots[-degree - 1] # NOTE: End of the valid parameter domain
-    u_vals: np.ndarray = np.linspace(u_min, u_max, sample)
-    curve: np.ndarray = np.zeros((sample, control_points.shape[1]))
+    u_vals: Vector = np.linspace(u_min, u_max, sample)
+    curve: MatrixNx3 = np.zeros((sample, control_points.shape[1]))
 
     # NOTE: Pour tous points 'u' entre 'u_min' et 'u_max',
     # trouve la position sur la courbe grae à la continuité des 'knots' et la force d'attraction des points de controle
     for idx, u in enumerate(u_vals):
-        numerator: np.ndarray = np.zeros(control_points.shape[1])
-        denominator: int = 0.0
+        numerator: Vector3 = np.zeros(control_points.shape[1])
+        denominator: float = 0.0
         for i in range(len(control_points)):
-            N: int = evalBspline(i, degree, knots, u)
+            N: float = evalBspline(i, degree, knots, u)
             numerator += ctrl_pt_weights[i] * N * control_points[i]
             denominator += ctrl_pt_weights[i] * N
          
@@ -216,13 +231,13 @@ def evalNURBSCurve(knots: np.ndarray, control_points: np.ndarray, ctrl_pt_weight
     return curve
 
 
-def evalBspline(i: int, degree: int, knots: np.ndarray, u: int) -> int:
+def evalBspline(i: int, degree: int, knots: list, u: float) -> float:
     n: int = len(knots) - 1
     if degree == 0:
         return 1.0 if i < n and knots[i] <= u < knots[i + 1] else 0.0
     
-    first_part: int = 0.0
-    second_part: int  = 0.0
+    first_part: float = 0.0
+    second_part: float  = 0.0
 
     if (i + degree) < n:
         denom1 = knots[i + degree] - knots[i]
@@ -300,9 +315,9 @@ def evalBsplineSurface(i, degree, nodes, parameter):
     return first_part + second_part
 
 
-def figure(degree: int, knots, control_points, ctrl_pt_weights):
-    bezier_segments = bezierCurves(knots, control_points, ctrl_pt_weights, degree)
-    nurbs_curve = evalNURBSCurve(knots, control_points, ctrl_pt_weights, degree)
+def figure(degree: int, knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vector):
+    bezier_segments: list = bezierCurves(knots, control_points, ctrl_pt_weights, degree)
+    nurbs_curve: MatrixNx3 = evalNURBSCurve(knots, control_points, ctrl_pt_weights, degree)
 
     # DRAW
     fig = plt.figure(figsize=(12, 10))
@@ -368,7 +383,7 @@ def figure(degree: int, knots, control_points, ctrl_pt_weights):
 
 def article():
     degree = 3
-    knots_definitions = [
+    knots_definitions: list[tuple[float, int]] = [
         (0.0, CLAMPED),
         (1/5, SIMPLE),
         (2/5, REDUSED),
@@ -376,9 +391,9 @@ def article():
         (1, CLAMPED)
     ]
 
-    knots = buildKnotVector(knots_definitions)
-    knots = [0, 0 ,0, 0, 1/5, 2/5, 2/5, 3/5, 3/5, 3/5, 1, 1, 1, 1]
-    control_points = np.array(
+    knots: list = buildKnotVector(knots_definitions)
+
+    control_points: MatrixNx3 = np.array(
         [
             [0, 6, 0],
             [1, 10, 0],
@@ -393,7 +408,7 @@ def article():
         ]
     )
 
-    ctrl_pt_weights = np.array([1, 2, 2, 1, 0.5, 0.5, 1, 1, 2, 1])
+    ctrl_pt_weights: Vector = np.array([1, 2, 2, 1, 0.5, 0.5, 1, 1, 2, 1])
 
     return figure(
         knots=knots, degree=degree, control_points=control_points, ctrl_pt_weights=ctrl_pt_weights
