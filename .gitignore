@@ -1,3 +1,4 @@
 __*
 *.png
 !/*_ref.png
+.venv
