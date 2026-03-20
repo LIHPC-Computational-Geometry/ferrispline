@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.special import comb
-import matplotlib.cm as cm
+import matplotlib as mpl
 import sys
 from enum import IntEnum
 
@@ -20,7 +20,7 @@ def buildKnotVector(knot_definitions):
     return knot_vector
 
 # NOTE segment_index is increment number `i` of the `figure` function with range (3, 10)
-def computeKnotInsertionMatrix(knots, degree: int, segment_index: int):
+def computeKnotInsertionMatrix(knots, degree: int, segment_index: int) -> np.ndarray:
     r"""Creation of a knot insertion matrix using Boehm's knot insertion algorithm.
 
         This conversion matrix allows the transformation of a local segment of a 
@@ -69,29 +69,31 @@ def computeKnotInsertionMatrix(knots, degree: int, segment_index: int):
             knot_insertion_matrix (array_like): Matrix of size (degree + 1) x (degree + 1).
     """
 
-    extraction_matrix = np.eye(1) # NOTE 2D Identity Matrice creation 1*1
+    extraction_matrix: np.ndarray = np.eye(1) # NOTE 2D Identity Matrice creation 1*1
 
     for degree_step in range(1, degree + 1):
-        start_idx = max(0, segment_index - degree_step)
-        end_idx = min(len(knots), segment_index + degree_step + 2)
-        local_knots = knots[start_idx:end_idx]
+        start_idx: int = max(0, segment_index - degree_step)
+        end_idx: int = min(len(knots), segment_index + degree_step + 2)
+        local_knots: np.ndarray = knots[start_idx:end_idx]
 
-        tmp_matrix_A = np.zeros((degree_step, degree_step + 1))
-        tmp_matrix_B = np.zeros((degree_step, degree_step + 1))
+        tmp_matrix_A: np.ndarray = np.zeros((degree_step, degree_step + 1))
+        tmp_matrix_B: np.ndarray = np.zeros((degree_step, degree_step + 1))
 
         for row in range(degree_step):
-            knot_start = row + 1
-            knot_end = knot_start + degree_step
+            knot_start: int = row + 1
+            knot_end: int = knot_start + degree_step
             
             # NOTE: The total distance between our two anchor nodes
-            distance = (local_knots[knot_end] - local_knots[knot_start])
+            distance: int = (local_knots[knot_end] - local_knots[knot_start])
 
             if distance != 0:
-                alpha = (local_knots[degree_step] - local_knots[knot_start]) / distance
-                beta = (local_knots[degree_step + 1] - local_knots[knot_start]) / distance
+                # NOTE: ratio d'interpolation d'insertion du noeud de début du segment
+                alpha: int = (local_knots[degree_step] - local_knots[knot_start]) / distance
+                # NOTE: ratio d'interpolation d'insertion du noeud de fin du segment
+                beta: int = (local_knots[degree_step + 1] - local_knots[knot_start]) / distance
             else:
-                alpha = 0.0
-                beta = 0.0
+                alpha: int = 0.0
+                beta: int = 0.0
 
             tmp_matrix_A[row, row] = 1 - alpha 
             tmp_matrix_A[row, row + 1] = alpha      
@@ -99,44 +101,44 @@ def computeKnotInsertionMatrix(knots, degree: int, segment_index: int):
             tmp_matrix_B[row, row] = 1 - beta  
             tmp_matrix_B[row, row + 1] = beta
 
-        upper_half = extraction_matrix @ tmp_matrix_A  
-        lower_half = extraction_matrix[-1:] @ tmp_matrix_B
+        upper_half: np.ndarray = extraction_matrix @ tmp_matrix_A  
+        lower_half: np.ndarray = extraction_matrix[-1:] @ tmp_matrix_B
 
         extraction_matrix = np.vstack([upper_half, lower_half])
 
     return extraction_matrix
 
 
-def bernstein(i, degree, t):
-    return comb(degree, i) * pow(t, i) * pow((1 - t), (degree - i))
+def bernstein(v: int, degree: int, t: np.ndarray) -> np.ndarray:
+    return comb(degree, v) * pow(t, v) * pow((1 - t), (degree - v))
 
 
-def rationalBasisFunction(weights, degree, sample=100):
+def rationalBasisBezierFunction(weights: np.ndarray, degree: int, sample: int) -> np.ndarray:
     r""" Calcule the rational basis function
 
         This function corresponds to the first part of the mathematical formula, 
         calculating the weighted influence of each control point at a time t.
 
         Args:
-            weights (array_like): weights vector of all control points 
-            degree (array_like): degree of the curve
+            weights (np.ndarray): weights vector of all control points 
+            degree (int): degree of the curve
             sample (int, optional): number of points evaluate into the bezier curve. Defaults to 100.
 
         Returns:
-            array_like: a matrix of (degree + 1) * sample size
+            np.ndarray: a matrix of (degree + 1) * sample size
     """
 
-    t = np.linspace(0, 1, sample)
-    weighted_strength = np.zeros((degree + 1, sample))
+    t: np.ndarray = np.linspace(0, 1, sample)
+    weighted_strength: np.ndarray = np.zeros((degree + 1, sample))
     for i in range(degree + 1):
-        force = bernstein(i, degree, t)
+        force: np.ndarray = bernstein(i, degree, t)
         weighted_strength += weights[i] * force
-    denominator = np.sum(weighted_strength, axis=0)
+    denominator: np.ndarray = np.sum(weighted_strength, axis=0)
     return weighted_strength / denominator
 
 
 
-def evalBezierCurve(control_points, weights, degree, sample=100):
+def evalBezierCurve(control_points: np.ndarray, weights: np.ndarray, degree: int, sample: int=100) -> np.ndarray:
     r"""
         Evaluates rational Bezier curve and returns it.
 
@@ -154,30 +156,85 @@ def evalBezierCurve(control_points, weights, degree, sample=100):
             curve (array_like): Rational Bezier curve.
     """
 
-    rational_basis = rationalBasisFunction(weights, degree)
-    transposed_rational_basis = rational_basis.T
-    curve_points = transposed_rational_basis @ control_points
+    rational_basis: np.ndarray = rationalBasisBezierFunction(weights, degree, sample)
+    transposed_rational_basis: np.ndarray = rational_basis.T
+    curve_points: np.ndarray = transposed_rational_basis @ control_points
     return curve_points
 
-def evalNURBSCurve(nodes, control_points, weights, degree, sample=300):
-    u_min = nodes[degree]
-    u_max = nodes[-degree - 1]
-    u_vals = np.linspace(u_min, u_max, sample)
-    curve = np.zeros((sample, control_points.shape[1]))
+def bezierCurves(knots: np.ndarray, control_points: np.ndarray, ctrl_pt_weights: np.ndarray, degree: int) -> list:
+    bezier_segments: list = []
+    for i in range(degree, len(knots) - degree - 1):
+        if knots[i] == knots[i + 1]:
+            continue
+    
+        ctrl_pt_start_idx: int = i - degree
+        ctrl_pt_end_idx: int = i
+    
+        if ctrl_pt_start_idx < 0 or ctrl_pt_end_idx >= len(control_points):
+            continue
 
+        knot_insertion_matrix: np.ndarray = computeKnotInsertionMatrix(knots, degree, i)
+        
+        # NOTE: correspond aux points et poids de l'intervalle ou l'on souhaite insérer le nouveau point 
+        local_ctrl_pt: np.ndarray = control_points[ctrl_pt_start_idx : ctrl_pt_end_idx + 1]
+        local_ctrl_pt_weights: np.ndarray = ctrl_pt_weights[ctrl_pt_start_idx : ctrl_pt_end_idx + 1]
+
+
+        # NOTE: Coordonnées homogènes des points de l'intervalle (matrice contenant n + 1 vecteur de coordonnées spatial multiplié par leur poids np.zeros(n+1, 3))
+        weighted_points: np.ndarray = local_ctrl_pt_weights[:, np.newaxis] * local_ctrl_pt
+        
+        # NOTE: coordonnées homogènes dont l'influence est modifier par la matrice d'insertion (matrice contenant n + 1 vecteur de coordonnées spatial multiplié par leur poids)
+        bezier_weighted_points: np.ndarray = knot_insertion_matrix @ weighted_points
+        # NOTE: Nouveaux poids des points de contrôle de Bézier, calculés par la matrice d'insertion (vecteur 1D contenant n + 1 valeurs scalaires)
+        bezier_weights: np.ndarray = knot_insertion_matrix @ local_ctrl_pt_weights
+
+        # NOTE: Supprime l'influence des poids ajoutés artificiellement dans weighted_points par une division, pour obtenir la matrice finale des n+1 vecteurs de coordonnées spatiales 3D (les points de contrôle de Bézier réels).
+        bezier_points: np.ndarray = bezier_weighted_points / bezier_weights[:, np.newaxis]
+
+        curve: np.ndarray = evalBezierCurve(bezier_points, bezier_weights, degree)
+        bezier_segments.append(curve)
+    return bezier_segments
+
+
+def evalNURBSCurve(knots: np.ndarray, control_points: np.ndarray, ctrl_pt_weights: np.ndarray, degree: int, sample: int=300) -> np.ndarray:
+    u_min: int = knots[degree] # NOTE: Start of the valid parameter domain (ensures partition of unity)
+    u_max: int = knots[-degree - 1] # NOTE: End of the valid parameter domain
+    u_vals: np.ndarray = np.linspace(u_min, u_max, sample)
+    curve: np.ndarray = np.zeros((sample, control_points.shape[1]))
+
+    # NOTE: Pour tous points 'u' entre 'u_min' et 'u_max',
+    # trouve la position sur la courbe grae à la continuité des 'knots' et la force d'attraction des points de controle
     for idx, u in enumerate(u_vals):
-        numerator = np.zeros(control_points.shape[1])
-        denominator = 0.0
+        numerator: np.ndarray = np.zeros(control_points.shape[1])
+        denominator: int = 0.0
         for i in range(len(control_points)):
-            N = evalBspline(i, degree, nodes, u)
-            numerator += weights[i] * N * control_points[i]
-            denominator += weights[i] * N
-        curve[idx] = numerator / denominator
+            N: int = evalBspline(i, degree, knots, u)
+            numerator += ctrl_pt_weights[i] * N * control_points[i]
+            denominator += ctrl_pt_weights[i] * N
+         
+        curve[idx] = np.zeros(3) if denominator == 0 else numerator / denominator
     return curve
 
-def bezierSegment():
-    knot_insertion_matrix = computeKnotInsertionMatrix(nodes, degree, i)
-    return bezier_segment
+
+def evalBspline(i: int, degree: int, knots: np.ndarray, u: int) -> int:
+    n: int = len(knots) - 1
+    if degree == 0:
+        return 1.0 if i < n and knots[i] <= u < knots[i + 1] else 0.0
+    
+    first_part: int = 0.0
+    second_part: int  = 0.0
+
+    if (i + degree) < n:
+        denom1 = knots[i + degree] - knots[i]
+        if denom1 != 0:
+            first_part = (u - knots[i]) / denom1 * evalBspline(i, degree - 1, knots, u)
+
+    if (i + degree + 1) < n:
+        denom2 = knots[i + degree + 1] - knots[i + 1]
+        if denom2 != 0:
+            second_part = ((knots[i + degree + 1] - u) / denom2 * evalBspline(i + 1, degree - 1, knots, u))
+
+    return first_part + second_part
 
 def evalNURBSSurface(
     nodes_u,
@@ -215,29 +272,6 @@ def evalNURBSSurface(
     return surface
 
 
-def evalBspline(i, degree, nodes, u):
-    n = len(nodes) - 1
-    if degree == 0:
-        if i >= n:
-            return 0.0
-        return 1.0 if nodes[i] <= u < nodes[i + 1] else 0.0
-    first_part = 0.0
-    second_part = 0.0
-    if (i + degree) < n:
-        denom1 = nodes[i + degree] - nodes[i]
-        if denom1 != 0:
-            first_part = (u - nodes[i]) / denom1 * evalBspline(i, degree - 1, nodes, u)
-    if (i + degree + 1) < n:
-        denom2 = nodes[i + degree + 1] - nodes[i + 1]
-        if denom2 != 0:
-            second_part = (
-                (nodes[i + degree + 1] - u)
-                / denom2
-                * evalBspline(i + 1, degree - 1, nodes, u)
-            )
-    return first_part + second_part
-
-
 # we add this specifically for surfaces
 def evalBsplineSurface(i, degree, nodes, parameter):
     n = len(nodes) - 1
@@ -267,39 +301,14 @@ def evalBsplineSurface(i, degree, nodes, parameter):
 
 
 def figure(degree: int, knots, control_points, ctrl_pt_weights):
-    bezier_segments = []
-
-    for i in range(degree, len(knots) - degree - 1):
-        if knots[i] == knots[i + 1]:
-            continue
-    
-        ctrl_pt_start_idx = i - degree
-        ctrl_pt_end_idx = i
-    
-        if first < 0 or last >= len(control_points):
-            continue
-
-        knot_insertion_matrix = computeKnotInsertionMatrix(knots, degree, i)
-        
-        local_points = control_points[ctrl_pt_start_idx : ctrl_pt_end_idx + 1]
-        local_weights = ctrl_pt_weights[ctrl_pt_start_idx : ctrl_pt_end_idx + 1]
-
-        weighted_points = local_weights[:, np.newaxis] * local_points
-        
-        bezier_weighted_points = knot_insertion_matrix @ weighted_points
-        bezier_weights = knot_insertion_matrix @ local_weights
-
-        bezier_points = bezier_weighted_points / bezier_weights[:, np.newaxis]
-
-        curve = evalBezierCurve(bezier_points, bezier_weights, degree)
-        bezier_segments.append(curve)
-    nurbs_curve = evalNURBSCurve(knots, control_points, weights, degree)
-
+    bezier_segments = bezierCurves(knots, control_points, ctrl_pt_weights, degree)
+    nurbs_curve = evalNURBSCurve(knots, control_points, ctrl_pt_weights, degree)
 
     # DRAW
     fig = plt.figure(figsize=(12, 10))
     ax = fig.add_subplot(111, projection="3d")
-    colors = cm.get_cmap("tab10", len(bezier_segments))
+    colors = mpl.colormaps.get_cmap('tab10')
+    colors = colors.resampled(len(bezier_segments))
 
     for idx, segment in enumerate(bezier_segments):
         ax.plot(
@@ -338,9 +347,9 @@ def figure(degree: int, knots, control_points, ctrl_pt_weights):
         denominator = 0.0
         for i in range(len(control_points)):
             N = evalBspline(i, degree, knots, u)
-            numerator += weights[i] * N * control_points[i]
-            denominator += weights[i] * N
-        point = numerator / denominator
+            numerator += ctrl_pt_weights[i] * N * control_points[i]
+            denominator += ctrl_pt_weights[i] * N
+        point = np.zeros(3) if denominator == 0 else numerator / denominator
         x_vals.append(point[0])
         y_vals.append(point[1])
         z_vals.append(point[2])
@@ -368,7 +377,7 @@ def article():
     ]
 
     knots = buildKnotVector(knots_definitions)
-
+    knots = [0, 0 ,0, 0, 1/5, 2/5, 2/5, 3/5, 3/5, 3/5, 1, 1, 1, 1]
     control_points = np.array(
         [
             [0, 6, 0],
