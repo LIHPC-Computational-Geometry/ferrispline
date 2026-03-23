@@ -5,14 +5,10 @@ from enum import IntEnum
 
 from .core_types import MatrixNx3, Vector
 
-class Multiplicity3Degrees(IntEnum):
-    SIMPLE = 1
-    REDUSED = 2
-    FULL = 3
-    CLAMPED = 4
-
-globals().update(Multiplicity3Degrees.__members__)
-
+SIMPLE = 1
+REDUSED = 2
+FULL = 3
+CLAMPED = 4
 
 def loadNURBSFromVTK(filepath: str, default_degree: int = 3) -> tuple[MatrixNx3, Vector, Vector, int]:
     """ Read a VTK file for extract all data. This function used a custom naming convention.
