@@ -7,6 +7,7 @@ import pyvista as pv
 from typing import Annotated
 from scipy.special import comb
 from enum import IntEnum
+import argparse
 
 # array of floating numbers
 FloatArray = npt.NDArray[np.float64]
@@ -28,6 +29,11 @@ class Multiplicity3Degrees(IntEnum):
     CLAMPED = 4
 
 globals().update(Multiplicity3Degrees.__members__)
+
+def setParser():
+    parser = argparse.ArgumentParser(prog="nrubs2bezier.py", description="A script for convert NURBS to Bezier Curve")
+    parser.add_argument("-f", "--file", type=str, help="vtk file with the good format")
+    return parser.parse_args()
 
 def loadNURBSFromVTK(filepath: str, default_degree: int = 3) -> tuple[MatrixNx3, Vector, Vector, int]:
     """ Read a VTK file for extract all data. This function used a custom naming convention.
@@ -82,6 +88,7 @@ def loadNURBSFromVTK(filepath: str, default_degree: int = 3) -> tuple[MatrixNx3,
         mesh = pv.read(filepath)
     except Exception as e:
         print(f"Error while reading the file: {e} ")
+        sys.exit(1)
     
     controle_point: MatrixNx3 = np.array(mesh.points, dtype=np.float64)
     num_points: int = len(controle_point)
@@ -494,16 +501,16 @@ def default_value() -> tuple[MatrixNx3, Vector, Vector, int]:
     return control_points, ctrl_pt_weights, knots, degree
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python nrubs2bezier.py <path_to_file.vtk>")
-        sys.exit(1)
-    
-    filepath: str = sys.argv[1]
+    args = setParser()
 
-    print(f"Loading file: {filepath}...")
-    control_points, ctrl_pt_weights, knots, degree = loadNURBSFromVTK(filepath)
+    if args.file:
+        filepath: str = args.file
 
-    print(f"Extraction success ! Curve of degree {degree} detected.")
+        print(f"Loading file: {filepath}...")
+        control_points, ctrl_pt_weights, knots, degree = loadNURBSFromVTK(filepath)
+        print(f"Extraction success ! Curve of degree {degree} detected.")
+    else:
+        control_points, ctrl_pt_weights, knots, degree = default_value()
 
     fig = figure(
         degree=degree,
