@@ -1,3 +1,9 @@
 __*
 *.png
 !/*_ref.png
+/target/
+
+
+# Added by cargo
+
+/target
