@@ -62,11 +62,14 @@ def loadNURBSFromVTK(filepath: str, default_degree: int = 3) -> tuple[MatrixNx3,
     try:
         mesh = pv.read(filepath)
     except Exception as e:
-        print(f"Error while reading the file: {e} ")
-        sys.exit(1)
+        raise ValueError(f"Error while reading the file: {e} ")
+        
     
     controle_point: MatrixNx3 = np.array(mesh.points, dtype=np.float64)
     num_points: int = len(controle_point)
+
+    if num_points == 0:
+        raise ValueError("Error: The VTK file does not contain any control points.")
 
     if "weights" not in mesh.point_data:
         ctrl_pt_weights: Vector = np.ones(num_points, dtype=np.float64)
@@ -76,7 +79,7 @@ def loadNURBSFromVTK(filepath: str, default_degree: int = 3) -> tuple[MatrixNx3,
     if "knots" not in mesh.field_data:
         degree = default_degree
 
-        knots_list(
+        knots_list = (
             [0.0] * degree +
             list(range(num_points - degree + 1)) +
             [float(num_points - degree)] * degree
@@ -87,14 +90,16 @@ def loadNURBSFromVTK(filepath: str, default_degree: int = 3) -> tuple[MatrixNx3,
         degree: int = len(knots) - len(controle_point) - 1
 
     if degree < 1:
-        print("Error: the number of control point and knot are invalid: knots number = control point number + degree + 1")
-        sys.exit(1)
+        raise ValueError("Error: the number of control point and knot are invalid: knots number = control point number + degree + 1")
+        
 
     return controle_point, ctrl_pt_weights, knots, degree
 
 def buildKnotVector(knot_definitions: list[tuple[float, int]]) -> list:
     knot_vector = []
     for value, multiplicity in knot_definitions:
+        if multiplicity <= 0:
+            raise ValueError(f"The knot multiplicity {value} must be > 0. Acualy multiplicity = {multiplicity}")
         knot_vector.extend([value] * multiplicity)
     return knot_vector
 

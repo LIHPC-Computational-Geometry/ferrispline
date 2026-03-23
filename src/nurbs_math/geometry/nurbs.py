@@ -1,14 +1,21 @@
 import numpy as np
-from ..core_types import MatrixMxN, MatrixNx3, MatrixNxN, Vector
+from ..core_types import MatrixMxN, MatrixNx3, MatrixNxN, Vector, Vector3
 
 def evalNURBSCurve(knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vector, degree: int, sample: int=300) -> MatrixNx3:
+    if sample <= 0:
+        raise ValueError("Sample size can not be zero or negative")
+    if len(control_points) != len(ctrl_pt_weights):
+        raise ValueError("Controle point and its weights are differents size")
+    if degree != len(knots) - len(control_points) - 1:
+        raise ValueError("The degree is physically impossible")
+
     u_min: int = knots[degree] # NOTE: Start of the valid parameter domain (ensures partition of unity)
     u_max: int = knots[-degree - 1] # NOTE: End of the valid parameter domain
     u_vals: Vector = np.linspace(u_min, u_max, sample)
     curve: MatrixNx3 = np.zeros((sample, control_points.shape[1]))
 
     # NOTE: Pour tous points 'u' entre 'u_min' et 'u_max',
-    # trouve la position sur la courbe grae à la continuité des 'knots' et la force d'attraction des points de control
+    # trouve la position sur la courbe grace à la continuité des 'knots' et la force d'attraction des points de control
     for idx, u in enumerate(u_vals):
         numerator: Vector3 = np.zeros(control_points.shape[1])
         denominator: float = 0.0
@@ -17,14 +24,19 @@ def evalNURBSCurve(knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vect
             numerator += ctrl_pt_weights[i] * N * control_points[i]
             denominator += ctrl_pt_weights[i] * N
          
-        curve[idx] = np.zeros(3) if denominator == 0 else numerator / denominator
+        curve[idx] = np.zeros(control_points.shape[1]) if denominator == 0 else numerator / denominator
     return curve
 
 
 def evalBspline(i: int, degree: int, knots: list, u: float) -> float:
     n: int = len(knots) - 1
     if degree == 0:
-        return 1.0 if i < n and knots[i] <= u < knots[i + 1] else 0.0
+        if i < n and knots[i] <= u < knots[i + 1]:
+            return 1.0
+        elif i < n and knots[i] <= u <= knots[i + 1] and u == knots[-1]:
+            return 1.0
+        else:
+            return 0.0
     
     first_part: float = 0.0
     second_part: float  = 0.0
