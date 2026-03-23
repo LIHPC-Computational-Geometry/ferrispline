@@ -30,6 +30,13 @@ def evalNURBSCurve(knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vect
 
 def evalBspline(i: int, degree: int, knots: list, u: float) -> float:
     n: int = len(knots) - 1
+
+    if degree < 0:
+        raise ValueError(f"Degree cannot be negative. Received: {degree}")
+    if i < 0 or i >= n:
+        raise ValueError(f"Index i ({i}) is out of bounds for knot vector of length {len(knots)}")
+    if degree < 0:
+        raise ValueError("degree can not be negative")
     if degree == 0:
         if i < n and knots[i] <= u < knots[i + 1]:
             return 1.0
