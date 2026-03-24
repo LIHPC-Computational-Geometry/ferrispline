@@ -9,6 +9,7 @@ RUN apt update && \
     python3 \
     python3-matplotlib \
     python3-pytest \
+    python3-pyvista \
     python3-scipy && \
     rm -rf /var/lib/apt/lists/*
 
