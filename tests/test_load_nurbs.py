@@ -33,7 +33,7 @@ def test_build_knot_vector_multiplicity(knot_value, multiplicity):
     invalid_definitions = [(knot_value, multiplicity)]
     
     with pytest.raises(ValueError) as exc_info:
-        buildKnotVector(invalid_definitions)
+        build_knot_vector(invalid_definitions)
         
     assert "must be > 0" in str(exc_info.value)
 

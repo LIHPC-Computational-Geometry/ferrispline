@@ -48,7 +48,7 @@ def test_eval_bspline_invalid_arguments(i, degree, knots, expected_error):
     u_constant = 0.5
     
     with pytest.raises(ValueError, match=expected_error):
-        evalBspline(i, degree, knots, u_constant)
+        eval_bspline(i, degree, knots, u_constant)
 
 def test_eval_nurbs_curve_straight_line():
     """Test that a degree 1 NURBS curve evaluates to a straight line between control points."""
