@@ -44,24 +44,20 @@ def figure(degree: int, knots: list, control_points: MatrixNx3, ctrl_pt_weights:
         label="Control points",
     )
 
-    # u_vals = np.linspace(knots[degree], knots[-degree - 1], 1000)
-    x_vals = []
-    y_vals = []
-    z_vals = []
-    for u in knots[degree:-degree]:
-        numerator = np.zeros(control_points.shape[1])
-        denominator = 0.0
-        for i in range(len(control_points)):
-            N = eval_bspline(i, degree, knots, u)
-            numerator += ctrl_pt_weights[i] * N * control_points[i]
-            denominator += ctrl_pt_weights[i] * N
-        point = np.zeros(3) if denominator == 0 else numerator / denominator
-        x_vals.append(point[0])
-        y_vals.append(point[1])
-        z_vals.append(point[2])
-
-    ax.scatter(x_vals, y_vals, z_vals, color="red", s=50, label="Bezier points")
-
+    if bezier_segments:
+        bezier_points = [segment[0] for segment in bezier_segments]
+        bezier_points.append(bezier_segments[-1][-1])    
+        bezier_points = np.array(bezier_points)
+        
+        ax.scatter(
+            bezier_points[:, 0], 
+            bezier_points[:, 1], 
+            bezier_points[:, 2], 
+            color="red", 
+            s=50, 
+            label="Bezier points"
+        )
+    
     ax.set_title("NURBS to Bezier")
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
