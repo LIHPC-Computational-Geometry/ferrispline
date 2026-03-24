@@ -5,13 +5,15 @@ FROM base AS latest
 RUN apt update && \
     apt install -y --no-install-recommends \
     git \
+    pip \
     pre-commit \
     python3 \
     python3-matplotlib \
     python3-pytest \
-    python3-pyvista \
-    python3-scipy && \
-    rm -rf /var/lib/apt/lists/*
+    python3-scipy \
+    libgl1 && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip install pyvista --break-system-packages
 
 FROM latest AS dev
 
