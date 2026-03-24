@@ -3,12 +3,12 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 from .core_types import MatrixNx3, Vector
-from .geometry.bezier import bezierCurves
-from .geometry.nurbs import evalNURBSCurve, evalBspline
+from .geometry.bezier import bezier_curves
+from .geometry.nurbs import eval_nurbs_curve, eval_bspline
 
 def figure(degree: int, knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vector):
-    bezier_segments: list = bezierCurves(knots, control_points, ctrl_pt_weights, degree)
-    nurbs_curve: MatrixNx3 = evalNURBSCurve(knots, control_points, ctrl_pt_weights, degree)
+    bezier_segments: list = bezier_curves(knots, control_points, ctrl_pt_weights, degree)
+    nurbs_curve: MatrixNx3 = eval_nurbs_curve(knots, control_points, ctrl_pt_weights, degree)
 
     # DRAW
     fig = plt.figure(figsize=(12, 10))
@@ -52,7 +52,7 @@ def figure(degree: int, knots: list, control_points: MatrixNx3, ctrl_pt_weights:
         numerator = np.zeros(control_points.shape[1])
         denominator = 0.0
         for i in range(len(control_points)):
-            N = evalBspline(i, degree, knots, u)
+            N = eval_bspline(i, degree, knots, u)
             numerator += ctrl_pt_weights[i] * N * control_points[i]
             denominator += ctrl_pt_weights[i] * N
         point = np.zeros(3) if denominator == 0 else numerator / denominator

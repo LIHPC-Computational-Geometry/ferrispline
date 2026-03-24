@@ -11,7 +11,7 @@ REDUSED = 2
 FULL = 3
 CLAMPED = 4
 
-def loadNURBSFromVTK(filepath: str, default_degree: int = 3) -> tuple[MatrixNx3, Vector, Vector, int]:
+def load_nurbs_from_vtk(filepath: str, default_degree: int = 3) -> tuple[MatrixNx3, Vector, Vector, int]:
     """ Read a VTK file for extract all data. This function used a custom naming convention.
 
         -------------------------------------------
@@ -96,7 +96,7 @@ def loadNURBSFromVTK(filepath: str, default_degree: int = 3) -> tuple[MatrixNx3,
 
     return control_points, ctrl_pt_weights, knots, degree
 
-def buildKnotVector(knot_definitions: list[tuple[float, int]]) -> list:
+def build_knot_vector(knot_definitions: list[tuple[float, int]]) -> list:
     knot_vector = []
     for value, multiplicity in knot_definitions:
         if multiplicity <= 0:
@@ -115,7 +115,7 @@ def default_value() -> tuple[MatrixNx3, Vector, Vector, int]:
         (1, CLAMPED)
     ]
 
-    knots: list = buildKnotVector(knots_definitions)
+    knots: list = build_knot_vector(knots_definitions)
 
     control_points: MatrixNx3 = np.array(
         [

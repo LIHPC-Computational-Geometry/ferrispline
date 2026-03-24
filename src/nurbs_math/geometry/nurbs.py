@@ -2,7 +2,7 @@ import numpy as np
 
 from ..core_types import MatrixMxN, MatrixNx3, MatrixNxN, Vector, Vector3
 
-def evalNURBSCurve(knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vector, degree: int, sample: int=300) -> MatrixNx3:
+def eval_nurbs_curve(knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vector, degree: int, sample: int=300) -> MatrixNx3:
     if sample <= 0:
         raise ValueError("Sample size can not be zero or negative")
     if len(control_points) != len(ctrl_pt_weights):
@@ -22,7 +22,7 @@ def evalNURBSCurve(knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vect
         numerator: Vector3 = np.zeros(control_points.shape[1])
         denominator: float = 0.0
         for i in range(len(control_points)):
-            N: float = evalBspline(i, degree, knots, u)
+            N: float = eval_bspline(i, degree, knots, u)
             numerator += ctrl_pt_weights[i] * N * control_points[i]
             denominator += ctrl_pt_weights[i] * N
          
@@ -30,7 +30,7 @@ def evalNURBSCurve(knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vect
     return curve
 
 
-def evalBspline(i: int, degree: int, knots: list, u: float) -> float:
+def eval_bspline(i: int, degree: int, knots: list, u: float) -> float:
     n: int = len(knots) - 1
 
     if degree < 0:
@@ -51,11 +51,11 @@ def evalBspline(i: int, degree: int, knots: list, u: float) -> float:
     if (i + degree) < n:
         denom1 = knots[i + degree] - knots[i]
         if denom1 != 0:
-            first_part = (u - knots[i]) / denom1 * evalBspline(i, degree - 1, knots, u)
+            first_part = (u - knots[i]) / denom1 * eval_bspline(i, degree - 1, knots, u)
 
     if (i + degree + 1) < n:
         denom2 = knots[i + degree + 1] - knots[i + 1]
         if denom2 != 0:
-            second_part = ((knots[i + degree + 1] - u) / denom2 * evalBspline(i + 1, degree - 1, knots, u))
+            second_part = ((knots[i + degree + 1] - u) / denom2 * eval_bspline(i + 1, degree - 1, knots, u))
 
     return first_part + second_part

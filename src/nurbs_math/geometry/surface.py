@@ -1,5 +1,5 @@
 
-def evalNURBSSurface(
+def eval_nurbs_surface(
     nodes_u,
     nodes_v,
     control_points,
@@ -24,9 +24,9 @@ def evalNURBSSurface(
             numerator = np.zeros(3)
             denominator = 0.0
             for i in range(control_points.shape[0]):
-                Ni = evalBsplineSurface(i, degree_u, nodes_u, u)
+                Ni = eval_bsplineSurface(i, degree_u, nodes_u, u)
                 for j in range(control_points.shape[1]):
-                    Mj = evalBsplineSurface(j, degree_v, nodes_v, v)
+                    Mj = eval_bsplineSurface(j, degree_v, nodes_v, v)
                     weights_ij = weights[i, j]
                     NMi_w = Ni * Mj * weights_ij
                     numerator += NMi_w * control_points[i, j]
@@ -35,7 +35,7 @@ def evalNURBSSurface(
     return surface
 
 # we add this specifically for surfaces
-def evalBsplineSurface(i, degree, nodes, parameter):
+def eval_bspline_surface(i, degree, nodes, parameter):
     n = len(nodes) - 1
     if degree == 0:
         if i >= n:
@@ -49,7 +49,7 @@ def evalBsplineSurface(i, degree, nodes, parameter):
             first_part = (
                 (parameter - nodes[i])
                 / denom1
-                * evalBsplineSurface(i, degree - 1, nodes, parameter)
+                * eval_bsplineSurface(i, degree - 1, nodes, parameter)
             )
     if (i + degree + 1) < n:
         denom2 = nodes[i + degree + 1] - nodes[i + 1]
@@ -57,6 +57,6 @@ def evalBsplineSurface(i, degree, nodes, parameter):
             second_part = (
                 (nodes[i + degree + 1] - parameter)
                 / denom2
-                * evalBsplineSurface(i + 1, degree - 1, nodes, parameter)
+                * eval_bsplineSurface(i + 1, degree - 1, nodes, parameter)
             )
     return first_part + second_part

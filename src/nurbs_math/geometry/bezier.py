@@ -4,7 +4,7 @@ from scipy.special import comb
 from ..core_types import MatrixMxN, MatrixNx3, MatrixNxN, Vector
 
 # NOTE segment_index is increment number `i` of the `figure` function with range (3, 10)
-def computeKnotInsertionMatrix(knots: list, degree: int, segment_index: int) -> MatrixNxN:
+def compute_knot_insertion_matrix(knots: list, degree: int, segment_index: int) -> MatrixNxN:
     r"""Creation of a knot insertion matrix using Boehm's knot insertion algorithm.
 
         This conversion matrix allows the transformation of a local segment of a 
@@ -99,7 +99,7 @@ def bernstein(v: int, degree: int, t: Vector) -> Vector:
     return comb(degree, v) * pow(t, v) * pow((1 - t), (degree - v))
  
 
-def rationalBasisBezierFunction(weights: Vector, degree: int, sample: int) -> MatrixMxN:
+def rational_basis_bezier_function(weights: Vector, degree: int, sample: int) -> MatrixMxN:
     r""" Calcule the rational basis function
 
         This function corresponds to the first part of the mathematical formula, 
@@ -127,7 +127,7 @@ def rationalBasisBezierFunction(weights: Vector, degree: int, sample: int) -> Ma
     return weighted_strength / denominator
 
 
-def evalBezierCurve(control_points: MatrixNx3, weights: Vector, degree: int, sample: int=100) -> MatrixNx3:
+def eval_bezier_curve(control_points: MatrixNx3, weights: Vector, degree: int, sample: int=100) -> MatrixNx3:
     r"""
         Evaluates rational Bezier curve and returns it.
 
@@ -146,12 +146,12 @@ def evalBezierCurve(control_points: MatrixNx3, weights: Vector, degree: int, sam
     """
     if len(control_points) != degree + 1:
         raise ValueError("Length of controle points doesn't corresponds to degree + 1")
-    rational_basis: MatrixMxN = rationalBasisBezierFunction(weights, degree, sample)
+    rational_basis: MatrixMxN = rational_basis_bezier_function(weights, degree, sample)
     transposed_rational_basis: MatrixMxN = rational_basis.T
     curve_points: MatrixNx3 = transposed_rational_basis @ control_points
     return curve_points
 
-def bezierCurves(knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vector, degree: int) -> list:
+def bezier_curves(knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vector, degree: int) -> list:
     bezier_segments: list = []
     for i in range(degree, len(knots) - degree - 1):
         if knots[i] == knots[i + 1]:
@@ -163,7 +163,7 @@ def bezierCurves(knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vector
         if ctrl_pt_start_idx < 0 or ctrl_pt_end_idx >= len(control_points):
             continue
 
-        knot_insertion_matrix: MatrixNxN = computeKnotInsertionMatrix(knots, degree, i)
+        knot_insertion_matrix: MatrixNxN = compute_knot_insertion_matrix(knots, degree, i)
         
         # NOTE: correspond aux points et poids de l'intervalle ou l'on souhaite insérer le nouveau point 
         local_ctrl_pt: Vector = control_points[ctrl_pt_start_idx : ctrl_pt_end_idx + 1]
@@ -184,6 +184,6 @@ def bezierCurves(knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vector
         bezier_points: MatrixNx3 = bezier_weighted_points / bezier_weights[:, np.newaxis]
 
     
-        curve: MatrixNx3 = evalBezierCurve(bezier_points, bezier_weights, degree)
+        curve: MatrixNx3 = eval_bezier_curve(bezier_points, bezier_weights, degree)
         bezier_segments.append(curve)
     return bezier_segments

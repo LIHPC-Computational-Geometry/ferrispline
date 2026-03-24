@@ -3,16 +3,16 @@ import argparse
 import matplotlib.pyplot as plt
 
 from .visualisation import figure
-from .load_nurbs import default_value, loadNURBSFromVTK
+from .load_nurbs import default_value, load_nurbs_from_vtk
 
-def setParser():
+def set_parser():
     parser = argparse.ArgumentParser(prog="nurbs2bezier.py", description="A script for convert NURBS to Bezier Curve")
     parser.add_argument("-f", "--file", type=str, help="vtk file with the good format")
     return parser.parse_args()
 
 
 def main():
-    args = setParser()
+    args = set_parser()
 
     if args.file:
         if not os.path.exists(args.file):
@@ -20,7 +20,7 @@ def main():
         filepath: str = args.file
 
         print(f"Loading file: {filepath}...")
-        control_points, ctrl_pt_weights, knots, degree = loadNURBSFromVTK(filepath)
+        control_points, ctrl_pt_weights, knots, degree = load_nurbs_from_vtk(filepath)
         print(f"Extraction success ! Curve of degree {degree} detected.")
     else:
         control_points, ctrl_pt_weights, knots, degree = default_value()
