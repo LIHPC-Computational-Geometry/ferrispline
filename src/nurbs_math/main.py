@@ -1,11 +1,12 @@
-import matplotlib.pyplot as plt
 import argparse
+
+import matplotlib.pyplot as plt
 
 from .visualisation import figure
 from .load_nurbs import default_value, loadNURBSFromVTK
 
 def setParser():
-    parser = argparse.ArgumentParser(prog="nrubs2bezier.py", description="A script for convert NURBS to Bezier Curve")
+    parser = argparse.ArgumentParser(prog="nurbs2bezier.py", description="A script for convert NURBS to Bezier Curve")
     parser.add_argument("-f", "--file", type=str, help="vtk file with the good format")
     return parser.parse_args()
 
@@ -14,6 +15,8 @@ def main():
     args = setParser()
 
     if args.file:
+        if not os.path.exists(args.file):
+            raise FileNotFoundError(f"File {args.file} not found.")
         filepath: str = args.file
 
         print(f"Loading file: {filepath}...")

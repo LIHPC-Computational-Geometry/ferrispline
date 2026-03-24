@@ -1,7 +1,8 @@
 import sys
+from enum import IntEnum
+
 import numpy as np
 import pyvista as pv
-from enum import IntEnum
 
 from .core_types import MatrixNx3, Vector
 
@@ -56,7 +57,7 @@ def loadNURBSFromVTK(filepath: str, default_degree: int = 3) -> tuple[MatrixNx3,
             tuple[MatrixNx3, Vector, Vector, int]: a tuple containing:
             - a matrix size N*3 of control points
             - a vector of size N for the weights of these control point
-            - a vector of size controle_point + degree + 1 with all knots
+            - a vector of size control_points + degree + 1 with all knots
             - an intager for the curve's degree 
     """
     try:
@@ -65,8 +66,8 @@ def loadNURBSFromVTK(filepath: str, default_degree: int = 3) -> tuple[MatrixNx3,
         raise ValueError(f"Error while reading the file: {e} ")
         
     
-    controle_point: MatrixNx3 = np.array(mesh.points, dtype=np.float64)
-    num_points: int = len(controle_point)
+    control_points: MatrixNx3 = np.array(mesh.points, dtype=np.float64)
+    num_points: int = len(control_points)
 
     if num_points == 0:
         raise ValueError("Error: The VTK file does not contain any control points.")
@@ -87,19 +88,19 @@ def loadNURBSFromVTK(filepath: str, default_degree: int = 3) -> tuple[MatrixNx3,
         knots: Vector = np.array(knots_list, dtype=np.float64)
     else:
         knots: Vector = np.array(mesh.field_data["knots"], dtype=np.float64).flatten() # NOTE use flatten() because the return of field_data can be a 2D Matrix
-        degree: int = len(knots) - len(controle_point) - 1
+        degree: int = len(knots) - len(control_points) - 1
 
     if degree < 1:
         raise ValueError("Error: the number of control point and knot are invalid: knots number = control point number + degree + 1")
         
 
-    return controle_point, ctrl_pt_weights, knots, degree
+    return control_points, ctrl_pt_weights, knots, degree
 
 def buildKnotVector(knot_definitions: list[tuple[float, int]]) -> list:
     knot_vector = []
     for value, multiplicity in knot_definitions:
         if multiplicity <= 0:
-            raise ValueError(f"The knot multiplicity {value} must be > 0. Acualy multiplicity = {multiplicity}")
+            raise ValueError(f"The knot multiplicity {value} must be > 0. Actually multiplicity = {multiplicity}")
         knot_vector.extend([value] * multiplicity)
     return knot_vector
 
@@ -110,6 +111,7 @@ def default_value() -> tuple[MatrixNx3, Vector, Vector, int]:
         (0.0, CLAMPED),
         (1/5, SIMPLE),
         (2/5, REDUSED),
+        (3/5, FULL),
         (1, CLAMPED)
     ]
 

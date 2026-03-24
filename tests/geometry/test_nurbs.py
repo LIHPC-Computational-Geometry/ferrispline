@@ -36,20 +36,24 @@ def test_evalBspline_partition_of_unity():
 def test_evalBspline_negative_degree():
     """Test that a ValueError is raised for negative degrees."""
     knots = [0.0, 1.0, 2.0, 3.0]
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as exc_info:
         evalBspline(0, -1, knots, 0.5)
+    assert "Degree cannot be negative." in str(exc_info.value)
 
 def test_evalBspline_negative_index():
     """Test that a ValueError is raised for a negative index i."""
     knots = [0.0, 1.0, 2.0, 3.0]
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as exc_info:
         evalBspline(-1, 1, knots, 0.5)
+    assert ("Index i" and "is out of bounds for knot vector of length") in str(exc_info.value)
 
 def test_evalBspline_index_too_large():
     """Test that a ValueError is raised if index i is out of bounds for the knot vector."""
     knots = [0.0, 1.0, 2.0]
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as exc_info:
         evalBspline(2, 1, knots, 0.5)
+    error_msg = str(exc_info.value)
+    assert "Index i" in error_msg and "is out of bounds for knot vector of length" in error_msg
 
 def test_evalNURBSCurve_straight_line():
     """Test that a degree 1 NURBS curve evaluates to a straight line between control points."""

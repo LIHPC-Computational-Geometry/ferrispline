@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.special import comb
+
 from ..core_types import MatrixMxN, MatrixNx3, MatrixNxN, Vector
 
 # NOTE segment_index is increment number `i` of the `figure` function with range (3, 10)
@@ -51,6 +52,8 @@ def computeKnotInsertionMatrix(knots: list, degree: int, segment_index: int) -> 
         Returns:
             knot_insertion_matrix (array_like): Matrix of size (degree + 1) x (degree + 1).
     """
+    if segment_index < 0 or segment_index >= len(knots) - 1:
+        raise ValueError(f"segment_index ({segment_index}) is out of bounds for knots of length {len(knots)}")
 
     extraction_matrix: MatrixNxN = np.eye(1) # NOTE 2D Identity Matrice creation 1*1
 
@@ -94,7 +97,7 @@ def computeKnotInsertionMatrix(knots: list, degree: int, segment_index: int) -> 
 
 def bernstein(v: int, degree: int, t: Vector) -> Vector:
     return comb(degree, v) * pow(t, v) * pow((1 - t), (degree - v))
-
+ 
 
 def rationalBasisBezierFunction(weights: Vector, degree: int, sample: int) -> MatrixMxN:
     r""" Calcule the rational basis function
@@ -111,12 +114,16 @@ def rationalBasisBezierFunction(weights: Vector, degree: int, sample: int) -> Ma
             np.ndarray: a matrix of (degree + 1) * sample size
     """
 
+    if len(weights) != degree + 1:
+        raise ValueError("Length of weights doesn't corresponds to degree + 1")
     t: Vector = np.linspace(0, 1, sample)
     weighted_strength: MatrixMxN = np.zeros((degree + 1, sample))
     for i in range(degree + 1):
         force: Vector = bernstein(i, degree, t)
-        weighted_strength += weights[i] * force
+        weighted_strength[i] = weights[i] * force
     denominator: Vector = np.sum(weighted_strength, axis=0)
+    if np.any(denominator == 0):
+        raise ValueError("Weighted strength can not be divid by 0")
     return weighted_strength / denominator
 
 
@@ -137,7 +144,8 @@ def evalBezierCurve(control_points: MatrixNx3, weights: Vector, degree: int, sam
         Returns:
             curve (array_like): Rational Bezier curve.
     """
-
+    if len(control_points) != degree + 1:
+        raise ValueError("Length of controle points doesn't corresponds to degree + 1")
     rational_basis: MatrixMxN = rationalBasisBezierFunction(weights, degree, sample)
     transposed_rational_basis: MatrixMxN = rational_basis.T
     curve_points: MatrixNx3 = transposed_rational_basis @ control_points
@@ -170,9 +178,12 @@ def bezierCurves(knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vector
         # NOTE: Nouveaux poids des points de contrôle de Bézier, calculés par la matrice d'insertion (vecteur 1D contenant n + 1 valeurs scalaires)
         bezier_weights: Vector = knot_insertion_matrix @ local_ctrl_pt_weights
 
+        if np.any(bezier_weights == 0):
+            raise ValueError("Zero weight encountered during Bezier extraction. Cannot divide by zero.")
         # NOTE: Supprime l'influence des poids ajoutés artificiellement dans weighted_points par une division, pour obtenir la matrice finale des n+1 vecteurs de coordonnées spatiales 3D (les points de contrôle de Bézier réels).
         bezier_points: MatrixNx3 = bezier_weighted_points / bezier_weights[:, np.newaxis]
 
+    
         curve: MatrixNx3 = evalBezierCurve(bezier_points, bezier_weights, degree)
         bezier_segments.append(curve)
     return bezier_segments

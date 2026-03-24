@@ -1,4 +1,5 @@
 import numpy as np
+
 from ..core_types import MatrixMxN, MatrixNx3, MatrixNxN, Vector, Vector3
 
 def evalNURBSCurve(knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vector, degree: int, sample: int=300) -> MatrixNx3:
@@ -7,6 +8,7 @@ def evalNURBSCurve(knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vect
     if len(control_points) != len(ctrl_pt_weights):
         raise ValueError("Controle point and its weights are differents size")
     if degree != len(knots) - len(control_points) - 1:
+        print({degree}, {len(knots)}, {len(control_points)}, {len(knots) - len(control_points) - 1})
         raise ValueError("The degree is physically impossible")
 
     u_min: int = knots[degree] # NOTE: Start of the valid parameter domain (ensures partition of unity)
@@ -35,8 +37,6 @@ def evalBspline(i: int, degree: int, knots: list, u: float) -> float:
         raise ValueError(f"Degree cannot be negative. Received: {degree}")
     if i < 0 or i >= n:
         raise ValueError(f"Index i ({i}) is out of bounds for knot vector of length {len(knots)}")
-    if degree < 0:
-        raise ValueError("degree can not be negative")
     if degree == 0:
         if i < n and knots[i] <= u < knots[i + 1]:
             return 1.0

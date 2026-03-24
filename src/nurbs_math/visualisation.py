@@ -1,6 +1,7 @@
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-import numpy as np
+
 from .core_types import MatrixNx3, Vector
 from .geometry.bezier import bezierCurves
 from .geometry.nurbs import evalNURBSCurve, evalBspline
@@ -68,5 +69,4 @@ def figure(degree: int, knots: list, control_points: MatrixNx3, ctrl_pt_weights:
     ax.legend()
     ax.grid(True)
 
-    ax.view_init(elev=30, azim=-60)
     return fig
