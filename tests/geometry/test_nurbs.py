@@ -33,27 +33,22 @@ def test_eval_bspline_partition_of_unity():
     total_sum = sum(eval_bspline(i, degree, knots, u) for i in range(num_ctrl_pts))
     np.testing.assert_allclose(total_sum, 1.0)
 
-def test_eval_bspline_negative_degree():
-    """Test that a ValueError is raised for negative degrees."""
-    knots = [0.0, 1.0, 2.0, 3.0]
-    with pytest.raises(ValueError) as exc_info:
-        eval_bspline(0, -1, knots, 0.5)
-    assert "Degree cannot be negative." in str(exc_info.value)
-
-def test_eval_bspline_negative_index():
-    """Test that a ValueError is raised for a negative index i."""
-    knots = [0.0, 1.0, 2.0, 3.0]
-    with pytest.raises(ValueError) as exc_info:
-        eval_bspline(-1, 1, knots, 0.5)
-    assert ("Index i" and "is out of bounds for knot vector of length") in str(exc_info.value)
-
-def test_eval_bspline_index_too_large():
-    """Test that a ValueError is raised if index i is out of bounds for the knot vector."""
-    knots = [0.0, 1.0, 2.0]
-    with pytest.raises(ValueError) as exc_info:
-        eval_bspline(2, 1, knots, 0.5)
-    error_msg = str(exc_info.value)
-    assert "Index i" in error_msg and "is out of bounds for knot vector of length" in error_msg
+@pytest.mark.parametrize(
+    "i, degree, knots, expected_error",
+    [
+        (0, -1, [0.0, 1.0, 2.0, 3.0], "Degree cannot be negative"),
+        (-1, 1, [0.0, 1.0, 2.0, 3.0], "is out of bounds for knot vector"),
+        (2, 1, [0.0, 1.0, 2.0], "is out of bounds for knot vector"),
+    ],
+    ids=["negative_degree", "negative_index", "index_too_large"]
+)
+def test_eval_bspline_invalid_arguments(i, degree, knots, expected_error):
+    """Test thata ValueError is raised if argument of eval_bspline are not valid."""
+    
+    u_constant = 0.5
+    
+    with pytest.raises(ValueError, match=expected_error):
+        evalBspline(i, degree, knots, u_constant)
 
 def test_eval_nurbs_curve_straight_line():
     """Test that a degree 1 NURBS curve evaluates to a straight line between control points."""

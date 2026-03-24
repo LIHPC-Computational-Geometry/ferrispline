@@ -19,20 +19,24 @@ def test_build_knot_vector():
     expected = [0.0, 0.0, 0.0, 0.5, 1.0, 1.0, 1.0]
     assert result == expected
 
-def test_build_knot_vector_zero_or_negative_multiplicity():
+
+@pytest.mark.parametrize(
+    "knot_value, multiplicity",
+    [
+        (0.5, 0),
+        (0.7, -2),
+    ]
+)
+def test_build_knot_vector_multiplicity(knot_value, multiplicity):
     """Teste que les multiplicités de 0 ou négatives lèvent bien une ValueError."""
     
-    definitions_zero = [(0.5, 0)]
+    invalid_definitions = [(knot_value, multiplicity)]
     
     with pytest.raises(ValueError) as exc_info:
-        build_knot_vector(definitions_zero)
+        buildKnotVector(invalid_definitions)
+        
     assert "must be > 0" in str(exc_info.value)
 
-    definitions_negative = [(0.7, -2)]
-    
-    with pytest.raises(ValueError):
-        build_knot_vector(definitions_negative)
-    assert "must be > 0" in str(exc_info.value)
 
 @patch("nurbs_math.load_nurbs.pv.read")
 def test_load_nurbs_from_vtk_success(mock_pv_read):
@@ -102,12 +106,10 @@ def test_load_nurbs_from_vtk_read_error(mock_pv_read):
 def test_load_nurbs_from_vtk_no_points(mock_pv_read):
     """Tests safe shutdown if the file is readable but contains no dots."""
     
-    # Arrange : Un maillage valide pour PyVista, mais avec un tableau de points vide
     mock_mesh = MagicMock()
     mock_mesh.points = np.array([]) 
     mock_pv_read.return_value = mock_mesh
 
-    # Act & Assert : Ta nouvelle sécurité (if num_points == 0) doit déclencher un sys.exit(1)
     with pytest.raises(ValueError) as exc_info:
         load_nurbs_from_vtk("fichier_without_points.vtk")
     
