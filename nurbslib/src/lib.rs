@@ -9,7 +9,7 @@ fn add(left: u64, right: u64) -> PyResult<u64> {
 }
 
 #[pymodule]
-fn api_python(m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn nurbslib(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(add, m)?)?;
     Ok(())
 }
