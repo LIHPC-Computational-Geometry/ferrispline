@@ -1,4 +1,39 @@
-# vtkConverter
+# VTK converter
+
+## Overview
+This repository hosts a high-performance library for generating, manipulating, and computing hexahedral meshes. It leverages a pure **Rust** core for intensive mathematical operations to ensure memory safety and optimal execution speed. It provides a native **Python API** via PyO3, designed for seamless integration into meshing workflows, blocking algorithms, and rendering pipelines (e.g., Panda3D, gmsh).
+
+## Repository Structure
+This project is organized as a Cargo Workspace (monorepo) to strictly separate the computational logic from the Python bindings.
+
+```text
+mon_projet_maillage/
+├── Cargo.toml                 # Global workspace configuration
+├── core_rust/                 # Pure Rust mathematical core
+│   ├── Cargo.toml
+│   └── src/lib.rs             # NURBS algorithms, mesh generation, geometry
+├── api_python/                # Rust-to-Python bindings (PyO3)
+│   ├── Cargo.toml
+│   ├── pyproject.toml         # Maturin build configuration
+│   └── src/lib.rs             # Exposes `core_rust` functions to Python
+└── sandbox_python/            # Sandbox python with the same content as `cargo_rust`
+    ├── pyproject.toml         
+    ├── src/                   # Python logic (VTK conversion, nurbs conversion to bezier curve)
+    └── tests/                 # Unit tests
+```
+
+## Prerequisites
+- [Rust toolchain](https://rustup.rs/) (2024 edition recommended)
+- Python 3.8 or higher
+- [Maturin](https://www.maturin.rs/) (Build system for Rust-based Python extensions)
+
+## Building for Development
+To compile the Rust core and install the Python extension directly into your active virtual environment, run:
+
+```bash
+cd api_python
+maturin develop
+```
 
 ## Image for CI
 
