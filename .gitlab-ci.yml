@@ -1,5 +1,5 @@
 default:
-  image: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
+  image: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
 
 workflow:
   rules:
@@ -22,7 +22,7 @@ build:
   script:
     - docker build --network=host
                    --push
-                   --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
+                   --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
                    --target latest
                    .devcontainer/
 
