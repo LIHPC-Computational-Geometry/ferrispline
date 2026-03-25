@@ -22,3 +22,9 @@ repos:
     rev: v3.20.0
     hooks:
     -   id: pyupgrade
+-   repo: https://github.com/doublify/pre-commit-rust.git
+    rev: v1.0
+    hooks:
+    -   id: fmt
+    -   id: cargo-check
+    -   id: clippy
