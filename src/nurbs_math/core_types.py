@@ -6,10 +6,14 @@ from typing import Annotated
 FloatArray = npt.NDArray[np.float64]
 
 # --- 1D (Vector) ---
-Vector3 = Annotated[FloatArray, "3"]      # Fixed vector (eg: a spatial coordinate x, y, z)
-VectorN  = Annotated[FloatArray, "N"]      # Dynamic size vector (e.g. nodes, weights, u_vals)
+Vector3 = Annotated[FloatArray, "3"]  # Fixed vector (eg: a spatial coordinate x, y, z)
+VectorN = Annotated[
+    FloatArray, "N"
+]  # Dynamic size vector (e.g. nodes, weights, u_vals)
 
 # --- 2D (Matrix) ---
-MatrixNx3 = Annotated[FloatArray, "N, 3"] # Matrix with 3 columns (eg: table of points)
-MatrixNxN = Annotated[FloatArray, "N, N"] # Square matrix (e.g. insertion matrix)
-MatrixMxN = Annotated[FloatArray, "M, N"] # Rectangular matrix (e.g. basis of evaluation)
+MatrixNx3 = Annotated[FloatArray, "N, 3"]  # Matrix with 3 columns (eg: table of points)
+MatrixNxN = Annotated[FloatArray, "N, N"]  # Square matrix (e.g. insertion matrix)
+MatrixMxN = Annotated[
+    FloatArray, "M, N"
+]  # Rectangular matrix (e.g. basis of evaluation)

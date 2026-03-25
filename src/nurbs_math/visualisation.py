@@ -6,14 +6,21 @@ from .core_types import MatrixNx3, Vector
 from .geometry.bezier import bezier_curves
 from .geometry.nurbs import eval_nurbs_curve, eval_bspline
 
-def figure(degree: int, knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vector):
-    bezier_segments: list = bezier_curves(knots, control_points, ctrl_pt_weights, degree)
-    nurbs_curve: MatrixNx3 = eval_nurbs_curve(knots, control_points, ctrl_pt_weights, degree)
+
+def figure(
+    degree: int, knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vector
+):
+    bezier_segments: list = bezier_curves(
+        knots, control_points, ctrl_pt_weights, degree
+    )
+    nurbs_curve: MatrixNx3 = eval_nurbs_curve(
+        knots, control_points, ctrl_pt_weights, degree
+    )
 
     # DRAW
     fig = plt.figure(figsize=(12, 10))
     ax = fig.add_subplot(111, projection="3d")
-    colors = mpl.colormaps.get_cmap('tab10')
+    colors = mpl.colormaps.get_cmap("tab10")
     colors = colors.resampled(len(bezier_segments))
 
     for idx, segment in enumerate(bezier_segments):
@@ -46,18 +53,18 @@ def figure(degree: int, knots: list, control_points: MatrixNx3, ctrl_pt_weights:
 
     if bezier_segments:
         bezier_points = [segment[0] for segment in bezier_segments]
-        bezier_points.append(bezier_segments[-1][-1])    
+        bezier_points.append(bezier_segments[-1][-1])
         bezier_points = np.array(bezier_points)
-        
+
         ax.scatter(
-            bezier_points[:, 0], 
-            bezier_points[:, 1], 
-            bezier_points[:, 2], 
-            color="red", 
-            s=50, 
-            label="Bezier points"
+            bezier_points[:, 0],
+            bezier_points[:, 1],
+            bezier_points[:, 2],
+            color="red",
+            s=50,
+            label="Bezier points",
         )
-    
+
     ax.set_title("NURBS to Bezier")
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
