@@ -21,3 +21,7 @@ precommitall:
   script:
     - pre-commit run --all
   allow_failure: true
+
+rstest:
+  script:
+    - cargo test
