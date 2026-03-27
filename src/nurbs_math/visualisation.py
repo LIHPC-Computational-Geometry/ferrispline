@@ -2,13 +2,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
-from .core_types import MatrixNx3, Vector
+from .core_types import MatrixNx3, VectorN
 from .geometry.bezier import bezier_curves
 from .geometry.nurbs import eval_nurbs_curve, eval_bspline
 
 
 def figure(
-    degree: int, knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vector
+    degree: int, knots: list, control_points: MatrixNx3, ctrl_pt_weights: VectorN
 ):
     bezier_segments: list = bezier_curves(
         knots, control_points, ctrl_pt_weights, degree

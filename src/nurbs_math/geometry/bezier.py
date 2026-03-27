@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.special import comb
 
-from ..core_types import MatrixMxN, MatrixNx3, MatrixNxN, Vector
+from ..core_types import MatrixMxN, MatrixNx3, MatrixNxN, VectorN
 
 
 # NOTE segment_index is increment number `i` of the `figure` function with range (3, 10)
@@ -47,7 +47,7 @@ def compute_knot_insertion_matrix(
     B-Spline control points to output the exact Bezier control points for this segment.
 
     Args:
-        knot (array_like): Vector of knots.
+        knot (array_like): VectorN of knots.
         degree (int): Curve's degree.
         segment_index (int): Indicates where we want to extract the segment
             (between knot[segment_index] and knot[segment_index + 1]).
@@ -65,7 +65,7 @@ def compute_knot_insertion_matrix(
     for degree_step in range(1, degree + 1):
         start_idx: int = max(0, segment_index - degree_step)
         end_idx: int = min(len(knots), segment_index + degree_step + 2)
-        local_knots: Vector = knots[start_idx:end_idx]
+        local_knots: VectorN = knots[start_idx:end_idx]
 
         tmp_matrix_A: MatrixNxN = np.zeros((degree_step, degree_step + 1))
         tmp_matrix_B: MatrixNxN = np.zeros((degree_step, degree_step + 1))
@@ -104,12 +104,12 @@ def compute_knot_insertion_matrix(
     return extraction_matrix
 
 
-def bernstein(v: int, degree: int, t: Vector) -> Vector:
+def bernstein(v: int, degree: int, t: VectorN) -> VectorN:
     return comb(degree, v) * pow(t, v) * pow((1 - t), (degree - v))
 
 
 def rational_basis_bezier_function(
-    weights: Vector, degree: int, sample: int
+    weights: VectorN, degree: int, sample: int
 ) -> MatrixMxN:
     r"""Calcule the rational basis function
 
@@ -127,19 +127,19 @@ def rational_basis_bezier_function(
 
     if len(weights) != degree + 1:
         raise ValueError("Length of weights doesn't corresponds to degree + 1")
-    t: Vector = np.linspace(0, 1, sample)
+    t: VectorN = np.linspace(0, 1, sample)
     weighted_strength: MatrixMxN = np.zeros((degree + 1, sample))
     for i in range(degree + 1):
-        force: Vector = bernstein(i, degree, t)
+        force: VectorN = bernstein(i, degree, t)
         weighted_strength[i] = weights[i] * force
-    denominator: Vector = np.sum(weighted_strength, axis=0)
+    denominator: VectorN = np.sum(weighted_strength, axis=0)
     if np.any(denominator == 0):
         raise ValueError("Weighted strength can not be divid by 0")
     return weighted_strength / denominator
 
 
 def eval_bezier_curve(
-    control_points: MatrixNx3, weights: Vector, degree: int, sample: int = 100
+    control_points: MatrixNx3, weights: VectorN, degree: int, sample: int = 100
 ) -> MatrixNx3:
     r"""
     Evaluates rational Bezier curve and returns it.
@@ -166,7 +166,7 @@ def eval_bezier_curve(
 
 
 def bezier_curves(
-    knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vector, degree: int
+    knots: list, control_points: MatrixNx3, ctrl_pt_weights: VectorN, degree: int
 ) -> list:
     bezier_segments: list = []
     for i in range(degree, len(knots) - degree - 1):
@@ -184,8 +184,8 @@ def bezier_curves(
         )
 
         # NOTE: correspond aux points et poids de l'intervalle ou l'on souhaite insérer le nouveau point
-        local_ctrl_pt: Vector = control_points[ctrl_pt_start_idx : ctrl_pt_end_idx + 1]
-        local_ctrl_pt_weights: Vector = ctrl_pt_weights[
+        local_ctrl_pt: VectorN = control_points[ctrl_pt_start_idx : ctrl_pt_end_idx + 1]
+        local_ctrl_pt_weights: VectorN = ctrl_pt_weights[
             ctrl_pt_start_idx : ctrl_pt_end_idx + 1
         ]
 
@@ -197,7 +197,7 @@ def bezier_curves(
         # NOTE: coordonnées homogènes dont l'influence est modifier par la matrice d'insertion (matrice contenant n + 1 vecteur de coordonnées spatial multiplié par leur poids)
         bezier_weighted_points: MatrixNx3 = knot_insertion_matrix @ weighted_points
         # NOTE: Nouveaux poids des points de contrôle de Bézier, calculés par la matrice d'insertion (vecteur 1D contenant n + 1 valeurs scalaires)
-        bezier_weights: Vector = knot_insertion_matrix @ local_ctrl_pt_weights
+        bezier_weights: VectorN = knot_insertion_matrix @ local_ctrl_pt_weights
 
         if np.any(bezier_weights == 0):
             raise ValueError(

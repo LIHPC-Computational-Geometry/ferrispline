@@ -1,12 +1,12 @@
 import numpy as np
 
-from ..core_types import MatrixMxN, MatrixNx3, MatrixNxN, Vector, Vector3
+from ..core_types import MatrixMxN, MatrixNx3, MatrixNxN, VectorN, Vector3
 
 
 def eval_nurbs_curve(
     knots: list,
     control_points: MatrixNx3,
-    ctrl_pt_weights: Vector,
+    ctrl_pt_weights: VectorN,
     degree: int,
     sample: int = 300,
 ) -> MatrixNx3:
@@ -27,7 +27,7 @@ def eval_nurbs_curve(
         degree
     ]  # NOTE: Start of the valid parameter domain (ensures partition of unity)
     u_max: int = knots[-degree - 1]  # NOTE: End of the valid parameter domain
-    u_vals: Vector = np.linspace(u_min, u_max, sample)
+    u_vals: VectorN = np.linspace(u_min, u_max, sample)
     curve: MatrixNx3 = np.zeros((sample, control_points.shape[1]))
 
     # NOTE: Pour tous points 'u' entre 'u_min' et 'u_max',

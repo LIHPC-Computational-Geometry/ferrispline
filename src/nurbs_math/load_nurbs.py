@@ -4,7 +4,7 @@ from enum import IntEnum
 import numpy as np
 import pyvista as pv
 
-from .core_types import MatrixNx3, Vector
+from .core_types import MatrixNx3, VectorN
 
 SIMPLE = 1
 REDUSED = 2
@@ -14,7 +14,7 @@ CLAMPED = 4
 
 def load_nurbs_from_vtk(
     filepath: str, default_degree: int = 3
-) -> tuple[MatrixNx3, Vector, Vector, int]:
+) -> tuple[MatrixNx3, VectorN, VectorN, int]:
     """Read a VTK file for extract all data. This function used a custom naming convention.
 
     -------------------------------------------
@@ -57,7 +57,7 @@ def load_nurbs_from_vtk(
         default_degree (int): fallback degree if knots are missing in the file.
 
     Returns:
-        tuple[MatrixNx3, Vector, Vector, int]: a tuple containing:
+        tuple[MatrixNx3, VectorN, VectorN, int]: a tuple containing:
         - a matrix size N*3 of control points
         - a vector of size N for the weights of these control point
         - a vector of size control_points + degree + 1 with all knots
@@ -75,9 +75,11 @@ def load_nurbs_from_vtk(
         raise ValueError("Error: The VTK file does not contain any control points.")
 
     if "weights" not in mesh.point_data:
-        ctrl_pt_weights: Vector = np.ones(num_points, dtype=np.float64)
+        ctrl_pt_weights: VectorN = np.ones(num_points, dtype=np.float64)
     else:
-        ctrl_pt_weights: Vector = np.array(mesh.point_data["weights"], dtype=np.float64)
+        ctrl_pt_weights: VectorN = np.array(
+            mesh.point_data["weights"], dtype=np.float64
+        )
 
     if "knots" not in mesh.field_data:
         degree = default_degree
@@ -87,9 +89,9 @@ def load_nurbs_from_vtk(
             + list(range(num_points - degree + 1))
             + [float(num_points - degree)] * degree
         )
-        knots: Vector = np.array(knots_list, dtype=np.float64)
+        knots: VectorN = np.array(knots_list, dtype=np.float64)
     else:
-        knots: Vector = np.array(
+        knots: VectorN = np.array(
             mesh.field_data["knots"], dtype=np.float64
         ).flatten()  # NOTE use flatten() because the return of field_data can be a 2D Matrix
         degree: int = len(knots) - len(control_points) - 1
@@ -113,7 +115,7 @@ def build_knot_vector(knot_definitions: list[tuple[float, int]]) -> list:
     return knot_vector
 
 
-def default_value() -> tuple[MatrixNx3, Vector, Vector, int]:
+def default_value() -> tuple[MatrixNx3, VectorN, VectorN, int]:
     degree = 3
 
     knots_definitions: list[tuple[float, int]] = [
@@ -141,5 +143,5 @@ def default_value() -> tuple[MatrixNx3, Vector, Vector, int]:
         ]
     )
 
-    ctrl_pt_weights: Vector = np.array([1, 2, 2, 1, 0.5, 0.5, 1, 1, 2, 1])
+    ctrl_pt_weights: VectorN = np.array([1, 2, 2, 1, 0.5, 0.5, 1, 1, 2, 1])
     return control_points, ctrl_pt_weights, knots, degree
