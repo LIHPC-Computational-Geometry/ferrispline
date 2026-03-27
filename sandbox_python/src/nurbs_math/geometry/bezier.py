@@ -165,8 +165,7 @@ def bezier_curves(knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vecto
         if ctrl_pt_start_idx < 0 or ctrl_pt_end_idx >= len(control_points):
             continue
 
-        rust_result_list = nurbslib.compute_knot_insertion_matrix(knots, degree, i)
-        knot_insertion_matrix: MatrixNxN = np.array(rust_result_list, dtype=np.float64)
+        knot_insertion_matrix: MatrixNxN = nurbslib.compute_knot_insertion_matrix(knots, degree, i)
 
         # NOTE: correspond aux points et poids de l'intervalle ou l'on souhaite insérer le nouveau point 
         local_ctrl_pt: Vector = control_points[ctrl_pt_start_idx : ctrl_pt_end_idx + 1]
