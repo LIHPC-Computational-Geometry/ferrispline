@@ -16,12 +16,15 @@ RUN apt update && \
     apt install -y --no-install-recommends \
     build-essential \
     git \
+    libgl1 \
+    pip \
     pre-commit \
     python3 \
     python3-matplotlib \
     python3-pytest \
     python3-scipy && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    pip install pyvista --break-system-packages
 
 FROM dep AS latest
 

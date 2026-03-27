@@ -1,9 +1,12 @@
-__*
 *.png
 !/*_ref.png
-/target/
 
+# Python
+.venv
+*.egg-info/
+__pycache__/
+*.pyc
+.pytest_cache/
 
 # Added by cargo
-
-/target
+/target/
