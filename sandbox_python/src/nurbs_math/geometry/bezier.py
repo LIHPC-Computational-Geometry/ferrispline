@@ -3,6 +3,8 @@ from scipy.special import comb
 
 from ..core_types import MatrixMxN, MatrixNx3, MatrixNxN, Vector
 
+import nurbslib
+
 # NOTE segment_index is increment number `i` of the `figure` function with range (3, 10)
 def compute_knot_insertion_matrix(knots: list, degree: int, segment_index: int) -> MatrixNxN:
     r"""Creation of a knot insertion matrix using Boehm's knot insertion algorithm.
@@ -163,8 +165,9 @@ def bezier_curves(knots: list, control_points: MatrixNx3, ctrl_pt_weights: Vecto
         if ctrl_pt_start_idx < 0 or ctrl_pt_end_idx >= len(control_points):
             continue
 
-        knot_insertion_matrix: MatrixNxN = compute_knot_insertion_matrix(knots, degree, i)
-        
+        rust_result_list = nurbslib.compute_knot_insertion_matrix(knots, degree, i)
+        knot_insertion_matrix: MatrixNxN = np.array(rust_result_list, dtype=np.float64)
+
         # NOTE: correspond aux points et poids de l'intervalle ou l'on souhaite insérer le nouveau point 
         local_ctrl_pt: Vector = control_points[ctrl_pt_start_idx : ctrl_pt_end_idx + 1]
         local_ctrl_pt_weights: Vector = ctrl_pt_weights[ctrl_pt_start_idx : ctrl_pt_end_idx + 1]

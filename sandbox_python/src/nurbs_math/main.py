@@ -1,7 +1,10 @@
 import argparse
 import os
 
+import matplotlib
+matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
+
 
 from .visualisation import figure
 from .load_nurbs import default_value, load_nurbs_from_vtk
