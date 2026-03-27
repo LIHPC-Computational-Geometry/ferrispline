@@ -31,7 +31,7 @@ mon_projet_maillage/
 To compile the Rust core and install the Python extension directly into your active virtual environment, run:
 
 ```bash
-cd api_python
+cd nurbslib
 maturin develop
 ```
 
