@@ -12,7 +12,7 @@ mon_projet_maillage/
 ├── core_rust/                 # Pure Rust mathematical core
 │   ├── Cargo.toml
 │   └── src/lib.rs             # NURBS algorithms, mesh generation, geometry
-├── api_python/                # Rust-to-Python bindings (PyO3)
+├── nurbslib/                  # Rust-to-Python bindings (PyO3)
 │   ├── Cargo.toml
 │   ├── pyproject.toml         # Maturin build configuration
 │   └── src/lib.rs             # Exposes `core_rust` functions to Python
