@@ -4,7 +4,7 @@ set -e
 
 echo "🟢 Step 1 : Check the virtual environnement..."
 
-if [ -z "$VIRTUAL_ENV" ]; then
+if [[ -z "$VIRTUAL_ENV" && -d ".venv" ]]; then
     echo "   -> Any environnement detected. .venv activation..."
     source .venv/bin/activate
 else
