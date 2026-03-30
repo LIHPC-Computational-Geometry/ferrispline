@@ -18,6 +18,11 @@ cd ..
 
 echo "🚀 Step 3 : Launch of nurbs-convert..."
 cd sandbox_python
-nurbs-convert "$@"
+if [ "$1" == "test" ]; then
+    echo "Lancement des tests avec Pytest..."
+    pytest
+else
+    nurbs-convert "$@"
+fi
 
 echo "✅ Done !"
