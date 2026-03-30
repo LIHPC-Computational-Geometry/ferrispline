@@ -6,7 +6,7 @@ echo "🟢 Step 1 : Check the virtual environnement..."
 
 if [-n "$VIRTUAL_ENV" ]; then
     echo "   -> The virtual environnement is already active ($VIRTUAL_ENV)."
-elif [ -d ".venv" ]
+elif [ -d ".venv" ]; then
     echo "   -> Any environnement detected. .venv activation..."
     source .venv/bin/activate
 else
