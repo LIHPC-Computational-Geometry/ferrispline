@@ -1,6 +1,8 @@
-use pyo3::prelude::*;
+#![allow(unsafe_op_in_unsafe_fn)]
 
 use core_rust::add as rust_add;
+use pyo3::prelude::*;
+
 pub mod geometry;
 
 #[pyfunction]
@@ -11,7 +13,10 @@ fn add(left: u64, right: u64) -> PyResult<u64> {
 
 #[pymodule]
 fn nurbslib(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(geometry::bezier::compute_knot_insertion_matrix, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        geometry::bezier::compute_knot_insertion_matrix,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(add, m)?)?;
     Ok(())
 }

@@ -9,7 +9,10 @@ pub fn compute_knot_insertion_matrix(
     let num_knots = knots.len();
 
     if segment_index >= num_knots.saturating_sub(1) {
-        return Err(format!("segment_index ({}) is out of bound for knots of length {}", segment_index, num_knots));
+        return Err(format!(
+            "segment_index ({}) is out of bound for knots of length {}",
+            segment_index, num_knots
+        ));
     }
 
     let mut extraction_matrix = DMatrix::<f64>::identity(1, 1);
@@ -52,7 +55,11 @@ pub fn compute_knot_insertion_matrix(
         let upper_half = &extraction_matrix * &tmp_matrix_a;
 
         let last_row = extraction_matrix.row(extraction_matrix.nrows() - 1);
-        let last_row_matrix = DMatrix::from_row_slice(1, extraction_matrix.ncols(), last_row.into_owned().as_slice());
+        let last_row_matrix = DMatrix::from_row_slice(
+            1,
+            extraction_matrix.ncols(),
+            last_row.into_owned().as_slice(),
+        );
 
         let lower_half = &last_row_matrix * &tmp_matrix_b;
 
@@ -60,11 +67,11 @@ pub fn compute_knot_insertion_matrix(
         let mut next_extraction = DMatrix::zeros(total_rows, upper_half.ncols());
 
         next_extraction
-            .slice_mut((0, 0), upper_half.shape())
+            .view_mut((0, 0), upper_half.shape())
             .copy_from(&upper_half);
-            
+
         next_extraction
-            .slice_mut((upper_half.nrows(), 0), lower_half.shape())
+            .view_mut((upper_half.nrows(), 0), lower_half.shape())
             .copy_from(&lower_half);
 
         extraction_matrix = next_extraction;

@@ -1,5 +1,4 @@
 use pyo3::{exceptions::PyValueError, prelude::*};
-use nalgebra::DMatrix;
 
 use core_rust::geometry::bezier::compute_knot_insertion_matrix as rs_compute_knot_insertion_matrix;
 
@@ -10,9 +9,8 @@ pub fn compute_knot_insertion_matrix(
     degree: usize,
     segment_index: usize,
 ) -> PyResult<Vec<Vec<f64>>> {
-    
     let matrix = rs_compute_knot_insertion_matrix(&knots, degree, segment_index)
-        .map_err(| err_msg| PyValueError::new_err(err_msg))?;
+        .map_err(PyValueError::new_err)?;
 
     let mut py_matrix = Vec::with_capacity(matrix.nrows());
     for r in 0..matrix.nrows() {

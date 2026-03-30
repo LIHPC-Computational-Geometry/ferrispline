@@ -8,8 +8,5 @@ __pycache__/
 *.pyc
 .pytest_cache/
 
-
-
 # Added by cargo
 /target/
-/target

@@ -1,4 +1,3 @@
-
 def eval_nurbs_surface(
     nodes_u,
     nodes_v,
@@ -33,6 +32,7 @@ def eval_nurbs_surface(
                     denominator += NMi_w
             surface[iu, iv] = numerator / denominator if denominator != 0 else numerator
     return surface
+
 
 # we add this specifically for surfaces
 def eval_bspline_surface(i, degree, nodes, parameter):

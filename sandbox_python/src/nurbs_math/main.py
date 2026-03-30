@@ -2,15 +2,19 @@ import argparse
 import os
 
 import matplotlib
-matplotlib.use('Qt5Agg')
+
+matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 
 
 from .visualisation import figure
 from .load_nurbs import default_value, load_nurbs_from_vtk
 
+
 def set_parser():
-    parser = argparse.ArgumentParser(prog="nurbs2bezier.py", description="A script for convert NURBS to Bezier Curve")
+    parser = argparse.ArgumentParser(
+        prog="nurbs2bezier.py", description="A script for convert NURBS to Bezier Curve"
+    )
     parser.add_argument("-f", "--file", type=str, help="vtk file with the good format")
     return parser.parse_args()
 
@@ -37,6 +41,7 @@ def main():
     )
 
     plt.show()
+
 
 if __name__ == "__main__":
     main()
