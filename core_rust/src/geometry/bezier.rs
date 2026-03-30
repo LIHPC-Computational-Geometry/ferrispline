@@ -79,3 +79,56 @@ pub fn compute_knot_insertion_matrix(
 
     Ok(extraction_matrix)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    /// Test that the extraction matrix has the correct (degree + 1) x (degree + 1) shape
+    fn test_compute_knot_insertion_matrix_dimension() {
+        let knots = vec![0.0, 0.0, 0.0, 1.0, 2.0, 3.0, 3.0, 3.0];
+        let degree = 2;
+        let segment_index = 3;
+
+        let matrix = compute_knot_insertion_matrix(&knots, degree, segment_index)
+            .expect("The function returned an error instead of the matrix");
+
+        assert_eq!(
+            matrix.nrows(),
+            degree + 1,
+            "The number of rows is incorrect"
+        );
+        assert_eq!(
+            matrix.ncols(),
+            degree + 1,
+            "The number of columns is incorrect"
+        );
+    }
+
+    #[test]
+    /// Test that an error is returned if the segment_index is out of bounds
+    fn test_compute_knot_insertion_matrix_invalid_segment_index() {
+        let knots = vec![0.0, 0.0, 1.0, 1.0];
+        let degree = 1;
+
+        let invalid_segment_index = 3;
+
+        let result = compute_knot_insertion_matrix(&knots, degree, invalid_segment_index);
+
+        assert!(
+            result.is_err(),
+            "The function should have returned an error (Err)!"
+        );
+
+        let error_msg = result.unwrap_err();
+        assert!(
+            error_msg.contains("segment_index"),
+            "The error message does not contain 'segment_index'"
+        );
+        assert!(
+            error_msg.contains("is out of bound for knots of length"),
+            "The error message does not contain the expected text"
+        );
+    }
+}
