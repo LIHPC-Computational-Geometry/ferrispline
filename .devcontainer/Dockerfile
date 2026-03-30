@@ -24,7 +24,9 @@ RUN apt update && \
     python3-pytest \
     python3-scipy && \
     rm -rf /var/lib/apt/lists/* && \
-    pip install pyvista --break-system-packages
+    pip install --break-system-packages \
+    pyvista \
+    maturin
 
 FROM dep AS latest
 
