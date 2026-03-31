@@ -28,7 +28,7 @@ build:
 
 pytest:
   script:
-    - pytest
+    - ./run.sh test
 
 precommit:
   script:

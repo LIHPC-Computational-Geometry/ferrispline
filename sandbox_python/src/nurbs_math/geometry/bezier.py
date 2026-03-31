@@ -3,6 +3,8 @@ from scipy.special import comb
 
 from ..core_types import MatrixMxN, MatrixNx3, MatrixNxN, VectorN
 
+import nurbslib
+
 
 # NOTE segment_index is increment number `i` of the `figure` function with range (3, 10)
 def compute_knot_insertion_matrix(
@@ -117,7 +119,7 @@ def rational_basis_bezier_function(
     calculating the weighted influence of each control point at a time t.
 
     Args:
-        weights (np.ndarray): weights vector of all control points
+        weights (np.ndarray): weights VectorN of all control points
         degree (int): degree of the curve
         sample (int, optional): number of points evaluate into the bezier curve. Defaults to 100.
 
@@ -149,8 +151,8 @@ def eval_bezier_curve(
         \text{curve}(t) = \frac{1}{\sum_{i=0}^{\text{degree}} \text{weights}[i] \start_idx{pmatrix} \text{degree} \\ i \end_idx{pmatrix} t^{i} (1 - t)^{(\text{degree} - i)}} \sum_{i=0}^{\text{degree}} \text{weights}[i] \start_idx{pmatrix} \text{degree} \\ i \end_idx{pmatrix} t^{i} (1 - t)^{(\text{degree} - i)} \text{control_points}[i]
 
     Args:
-    control_points (array_like): Control points vector.
-    weights (array_like): Weights vector.
+    control_points (array_like): Control points VectorN.
+    weights (array_like): Weights VectorN.
     degree (int): Bezier basis degree.
     sample (int, optional): Render sample.
 
@@ -179,7 +181,7 @@ def bezier_curves(
         if ctrl_pt_start_idx < 0 or ctrl_pt_end_idx >= len(control_points):
             continue
 
-        knot_insertion_matrix: MatrixNxN = compute_knot_insertion_matrix(
+        knot_insertion_matrix: MatrixNxN = nurbslib.compute_knot_insertion_matrix(
             knots, degree, i
         )
 

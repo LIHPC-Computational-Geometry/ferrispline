@@ -59,8 +59,8 @@ def load_nurbs_from_vtk(
     Returns:
         tuple[MatrixNx3, VectorN, VectorN, int]: a tuple containing:
         - a matrix size N*3 of control points
-        - a vector of size N for the weights of these control point
-        - a vector of size control_points + degree + 1 with all knots
+        - a VectorN of size N for the weights of these control point
+        - a VectorN of size control_points + degree + 1 with all knots
         - an intager for the curve's degree
     """
     try:

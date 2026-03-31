@@ -41,8 +41,8 @@ def test_eval_bspline_partition_of_unity():
     "i, degree, knots, expected_error",
     [
         (0, -1, [0.0, 1.0, 2.0, 3.0], "Degree cannot be negative"),
-        (-1, 1, [0.0, 1.0, 2.0, 3.0], "is out of bounds for knot vector"),
-        (2, 1, [0.0, 1.0, 2.0], "is out of bounds for knot vector"),
+        (-1, 1, [0.0, 1.0, 2.0, 3.0], "is out of bounds for knot VectorN"),
+        (2, 1, [0.0, 1.0, 2.0], "is out of bounds for knot VectorN"),
     ],
     ids=["negative_degree", "negative_index", "index_too_large"],
 )
@@ -113,7 +113,7 @@ def test_eval_nurbs_curve_inconsistent_sizes():
 
 
 def test_eval_nurbs_curve_degree_out_of_bounds():
-    """Test that a ValueError is raised if the degree is physically impossible for the knot vector."""
+    """Test that a ValueError is raised if the degree is physically impossible for the knot VectorN."""
     control_points = np.array([[0.0, 0.0, 0.0], [1.0, 1.0, 0.0]])
     weights = np.array([1.0, 1.0])
     knots = [0.0, 1.0]

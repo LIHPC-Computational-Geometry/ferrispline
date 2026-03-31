@@ -55,7 +55,7 @@ def eval_bspline(i: int, degree: int, knots: list, u: float) -> float:
         raise ValueError(f"Degree cannot be negative. Received: {degree}")
     if i < 0 or i >= n:
         raise ValueError(
-            f"Index i ({i}) is out of bounds for knot vector of length {len(knots)}"
+            f"Index i ({i}) is out of bounds for knot VectorN of length {len(knots)}"
         )
     if degree == 0:
         if i < n and knots[i] <= u < knots[i + 1]:

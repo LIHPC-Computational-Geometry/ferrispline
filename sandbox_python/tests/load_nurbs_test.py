@@ -7,7 +7,7 @@ from nurbs_math.load_nurbs import build_knot_vector, load_nurbs_from_vtk
 
 
 def test_build_knot_vector():
-    """Check the creation of knot vector with multiplicity"""
+    """Check the creation of knot VectorN with multiplicity"""
     definitions = [(0.0, 3), (0.5, 1), (1.0, 3)]
 
     result = build_knot_vector(definitions)

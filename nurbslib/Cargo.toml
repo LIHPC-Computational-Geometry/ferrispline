@@ -1,0 +1,13 @@
+[package]
+name = "nurbslib"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "nurbslib"
+crate-type = ["cdylib"]
+
+[dependencies]
+core_rust = { path = "../core_rust"}
+nalgebra = "0.34.1"
+pyo3 = { version = "0.21", features = ["extension-module"] }
