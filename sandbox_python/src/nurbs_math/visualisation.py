@@ -4,7 +4,7 @@ import matplotlib as mpl
 
 from .core_types import MatrixNx3, VectorN
 from .geometry.bezier import bezier_curves
-from .geometry.nurbs import eval_nurbs_curve, eval_bspline
+from .geometry.nurbs import eval_nurbs_curve, cox_deboor
 
 
 def figure(
