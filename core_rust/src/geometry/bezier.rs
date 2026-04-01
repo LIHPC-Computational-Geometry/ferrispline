@@ -1,5 +1,13 @@
 use nalgebra::DMatrix;
 
+use crate::traits::PointTrait;
+
+#[derive(Debug)]
+pub struct BezierCurve<P: PointTrait> {
+    pub(crate) _degree: usize,
+    pub(crate) _controle_points: Vec<P>,
+}
+
 // TODO: create an error type
 pub fn compute_knot_insertion_matrix(
     knots: &[f64],
