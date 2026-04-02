@@ -35,7 +35,7 @@ pub fn compute_knot_insertion_matrix(
     let mut extraction_matrix = DMatrix::<f64>::identity(1, 1);
 
     for degree_step in 1..(degree + 1) {
-        let start_idx = segment_index.saturating_sub(degree);
+        let start_idx = segment_index.saturating_sub(degree_step);
         let end_idx = (segment_index + degree_step + 2).min(num_knots);
 
         let local_knots = &knots[start_idx..end_idx];
