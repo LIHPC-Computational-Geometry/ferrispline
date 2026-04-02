@@ -1,11 +1,20 @@
-use nalgebra::DMatrix;
+use nalgebra::{DMatrix, Point3};
 
-use crate::traits::PointTrait;
+// use crate::traits::PointTrait;
 
 #[derive(Debug)]
-pub struct BezierCurve<P: PointTrait> {
+pub struct BezierCurve {
     pub(crate) _degree: usize,
-    pub(crate) _controle_points: Vec<P>,
+    pub(crate) _controle_points: Vec<Point3<f64>>,
+}
+
+impl BezierCurve {
+    pub fn new(_degree: usize, _controle_points: Vec<Point3<f64>>) -> Self {
+        Self {
+            _degree,
+            _controle_points,
+        }
+    }
 }
 
 // TODO: create an error type
