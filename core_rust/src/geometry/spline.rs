@@ -1,17 +1,16 @@
 use crate::core::knot::KnotVector;
-// use crate::core::point::WeightedPoint;
-use crate::geometry::bezier::BezierCurve;
 use crate::traits::ParametricCurve;
 use nalgebra::{Point3, Vector3};
 use ndarray::linspace;
+
 //
 // Main SplineCurve Struct
 //
 #[derive(Debug)]
 pub struct SplineCurve {
-    pub(crate) degree: usize,
-    pub(crate) controle_points: Vec<(Point3<f64>, f64)>,
-    pub(crate) knots: KnotVector,
+    pub degree: usize,
+    pub controle_points: Vec<(Point3<f64>, f64)>,
+    pub knots: KnotVector,
 }
 
 //
@@ -88,7 +87,7 @@ impl SplineCurve {
     }
 
     fn cox_de_boor(&self, i: usize, degree: usize, u: f64) -> Result<f64, String> {
-        let n = self.controle_points.len() - 1;
+        let n = self.knots.as_slice().len() - 1;
 
         if i >= n {
             return Err(format!(
@@ -129,11 +128,11 @@ impl SplineCurve {
         Ok(first_part + second_part)
     }
 
-    pub fn eval_nurbs_curve(&self, sample: usize) -> Result<BezierCurve, String> {
+    pub fn eval_nurbs_curve(&self, sample: usize) -> Result<Vec<Point3<f64>>, String> {
         let domain = self.domain();
         let u_vals = linspace(domain.0, domain.1, sample);
 
-        let mut controle_points: Vec<Point3<f64>> = Vec::new();
+        let mut points: Vec<Point3<f64>> = Vec::new();
         for u in u_vals {
             let mut numerator = Vector3::zeros();
             let mut denominator = 0.0;
@@ -150,9 +149,9 @@ impl SplineCurve {
                 numerator / denominator
             };
 
-            controle_points.push(Point3::from(point));
+            points.push(Point3::from(point));
         }
-        Ok(BezierCurve::new(self.degree, controle_points))
+        Ok(points)
     }
 }
 
@@ -161,7 +160,7 @@ impl SplineCurve {
 //
 impl ParametricCurve for SplineCurve {
     fn domain(&self) -> (f64, f64) {
-        let n = self.controle_points.len() - 1 - self.degree;
+        let n = self.knots.as_slice().len() - self.degree - 1;
         let p = self.degree;
         (self.knots.as_slice()[p], self.knots.as_slice()[n])
     }

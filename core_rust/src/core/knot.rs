@@ -1,5 +1,5 @@
 #[derive(Debug, PartialEq)]
-pub struct KnotVector(Vec<f64>);
+pub struct KnotVector(pub Vec<f64>);
 
 impl KnotVector {
     pub fn new(knots: Vec<f64>) -> Result<Self, String> {
