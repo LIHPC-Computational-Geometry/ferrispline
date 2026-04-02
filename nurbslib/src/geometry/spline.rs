@@ -19,20 +19,15 @@ impl PySplineCurve {
         weight_py: Vec<f64>,
         knots: Vec<f64>,
     ) -> PyResult<Self> {
-        let controle_points: Vec<(Point3<f64>, f64)> = points_py
+        let controle_points: Vec<Point3<f64>> = points_py
             .into_iter()
             .map(|p| Point3::new(p[0], p[1], p[2]))
-            .zip(weight_py)
             .collect();
 
-        // TODO: Change the creation method of SplineCurve
-        // Création de votre vraie structure Rust
-        let inner = SplineCurve {
-            degree,
-            controle_points,
-            knots: KnotVector(knots),
-        };
-
+        let inner = SplineCurve::builder()
+            .degree(degree)
+            .build_nurbs(controle_points, weight_py, KnotVector(knots))
+            .map_err(PyValueError::new_err)?;
         Ok(Self { inner })
     }
 
