@@ -86,6 +86,32 @@ impl SplineCurve {
         SplineCurveBuilder::default()
     }
 
+    pub fn eval_nurbs_curve(&self, sample: usize) -> Result<Vec<Point3<f64>>, String> {
+        let domain = self.domain();
+        let u_vals = linspace(domain.0, domain.1, sample);
+
+        let mut points: Vec<Point3<f64>> = Vec::new();
+        for u in u_vals {
+            let mut numerator = Vector3::zeros();
+            let mut denominator = 0.0;
+
+            for i in 0..self.controle_points.len() {
+                let n = self.cox_de_boor(i, self.degree, u)?;
+                let weight_n = self.controle_points[i].1 * n;
+                numerator += self.controle_points[i].0.coords * weight_n;
+                denominator += weight_n;
+            }
+            let point = if denominator.abs() < 1e-9 {
+                Vector3::zeros()
+            } else {
+                numerator / denominator
+            };
+
+            points.push(Point3::from(point));
+        }
+        Ok(points)
+    }
+
     fn cox_de_boor(&self, i: usize, degree: usize, u: f64) -> Result<f64, String> {
         let n = self.knots.as_slice().len() - 1;
 
@@ -126,32 +152,6 @@ impl SplineCurve {
             }
         }
         Ok(first_part + second_part)
-    }
-
-    pub fn eval_nurbs_curve(&self, sample: usize) -> Result<Vec<Point3<f64>>, String> {
-        let domain = self.domain();
-        let u_vals = linspace(domain.0, domain.1, sample);
-
-        let mut points: Vec<Point3<f64>> = Vec::new();
-        for u in u_vals {
-            let mut numerator = Vector3::zeros();
-            let mut denominator = 0.0;
-
-            for i in 0..self.controle_points.len() {
-                let n = self.cox_de_boor(i, self.degree, u)?;
-                let weight_n = self.controle_points[i].1 * n;
-                numerator += self.controle_points[i].0.coords * weight_n;
-                denominator += weight_n;
-            }
-            let point = if denominator.abs() < 1e-9 {
-                Vector3::zeros()
-            } else {
-                numerator / denominator
-            };
-
-            points.push(Point3::from(point));
-        }
-        Ok(points)
     }
 }
 
