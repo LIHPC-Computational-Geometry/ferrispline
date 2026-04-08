@@ -174,11 +174,11 @@ impl SplineCurve {
 
         let mut extraction_matrix = Array2::<f64>::eye(1);
 
-        for degree_step in 1..(self.degree + 1) {
+        for degree_step in 1..=self.degree {
             let start_idx = segment_index.saturating_sub(degree_step);
-            let end_idx = (segment_index + degree_step + 2).min(num_knots);
+            let end_idx = (segment_index + degree_step + 1).min(num_knots);
 
-            let local_knots = &self.knots.as_slice()[start_idx..end_idx];
+            let local_knots = &self.knots.as_slice()[start_idx..=end_idx];
 
             let mut tmp_matrix_a = Array2::<f64>::zeros((degree_step, degree_step + 1));
             let mut tmp_matrix_b = Array2::<f64>::zeros((degree_step, degree_step + 1));
@@ -249,7 +249,7 @@ impl SplineCurve {
     /// Converte a NURBS curve to a Bezier curve
     pub fn to_bezier(&self) -> Result<Vec<BezierCurve>, String> {
         let mut bezier_curves: Vec<BezierCurve> = Vec::new();
-        for i in self.degree..(self.knots.as_slice().len() - self.degree - 1) {
+        for i in self.degree..self.controle_points.nrows() {
             if self.knots.as_slice()[i] == self.knots.as_slice()[i + 1] {
                 continue;
             }

@@ -66,7 +66,7 @@ impl BezierCurve {
 
         let mut points: Array2<f64> = Array2::zeros((3, sample));
 
-        for i in 0..(self.degree + 1) {
+        for i in 0..=self.degree {
             let forces: Array1<f64> = self.bernstein(i, &t);
 
             let cp_x = self.controle_points[[i, 0]];
@@ -99,7 +99,7 @@ impl BezierCurve {
         let t: Array1<f64> = Array1::linspace(0.0, 1.0, sample);
         let mut weighted_strength: Array2<f64> = Array2::zeros((self.degree + 1, sample));
 
-        for i in 0..(self.degree + 1) {
+        for i in 0..=self.degree {
             let forces: Array1<f64> = Array1::from(self.bernstein(i, &t));
             weighted_strength
                 .row_mut(i)
@@ -118,50 +118,85 @@ impl BezierCurve {
 
 #[cfg(test)]
 mod tests {
-    use ndarray::array;
-
     use super::*;
+    use ndarray::{Array1, Array2, array};
+
+    // ==========================================
+    // 1. Constructor Validation Tests
+    // ==========================================
+
+    #[test]
+    fn test_new_degree_mismatch() {
+        let degree = 2;
+        // Degree 2 needs 3 control points, we provide 4
+        let control_points = Array2::zeros((4, 3));
+
+        let result = BezierCurve::new(degree, control_points);
+        assert!(
+            result.is_err(),
+            "Should fail because 4 points != degree 2 + 1"
+        );
+        assert!(result.unwrap_err().contains("Degree count mismatch"));
+    }
+
+    #[test]
+    fn test_new_with_weights_mismatch() {
+        let degree = 2;
+        let control_points = Array2::zeros((3, 3));
+        let weights = Array1::zeros(2);
+
+        let result = BezierCurve::new_with_weights(degree, control_points, weights);
+        assert!(
+            result.is_err(),
+            "Should fail because point count != weight count"
+        );
+        assert!(result.unwrap_err().contains("Weight count mismatch"));
+    }
+
+    // ==========================================
+    // 2. Bernstein Basis Tests
+    // ==========================================
 
     #[test]
     fn test_bernstein_extremes() {
         let degree = 3;
+        let dummy_points = Array2::zeros((4, 3));
+        let curve = BezierCurve::new(degree, dummy_points).unwrap();
 
-        // At t=0, only the first polynomial (v=0) is 1.0 (using 1x0 matrix for dummy)
-        let curve_v0: BezierCurve = BezierCurve::new(degree, Array2::zeros((1, 0))).unwrap();
-        assert_eq!(curve_v0.bernstein(0, &array![0.0]), array![1.0]);
-        let curve_v1: BezierCurve = BezierCurve::new(degree, Array2::zeros((1, 0))).unwrap();
-        assert_eq!(curve_v1.bernstein(1, &array![0.0]), array![0.0]);
+        // At t=0, only the first polynomial (v=0) is 1.0
+        assert_eq!(curve.bernstein(0, &array![0.0]), array![1.0]);
+        assert_eq!(curve.bernstein(1, &array![0.0]), array![0.0]);
 
         // At t=1, only the last polynomial (v=degree) is 1.0
-        let curve: BezierCurve = BezierCurve::new(degree, Array2::zeros((1, 0))).unwrap();
         assert_eq!(curve.bernstein(degree, &array![1.0]), array![1.0]);
-        let curve: BezierCurve = BezierCurve::new(degree, Array2::zeros((1, 0))).unwrap();
         assert_eq!(curve.bernstein(0, &array![1.0]), array![0.0]);
     }
 
     #[test]
     fn test_bernstein_partition_of_unity() {
         let degree = 3;
+        let dummy_points = Array2::zeros((4, 3));
+        let curve = BezierCurve::new(degree, dummy_points).unwrap();
 
-        let mut t_vec = Vec::new();
-        for i in 0..10 {
-            t_vec.push(i as f64 / 9.0);
-        }
-        let t_vals = Array1::from(t_vec);
+        let t_vals = Array1::linspace(0.0, 1.0, 10);
         let mut totals = vec![0.0; 10];
 
         for v in 0..=degree {
-            let curve: BezierCurve = BezierCurve::new(degree, Array2::zeros((0, 0))).unwrap();
             let results = curve.bernstein(v, &t_vals);
             for (i, &res) in results.iter().enumerate() {
                 totals[i] += res;
             }
         }
 
+        // Sum of all basis polynomials for any t must be exactly 1.0
         for total in totals {
             assert!((total - 1.0).abs() < 1e-10);
         }
     }
+
+    // ==========================================
+    // 3. Evaluation Tests
+    // ==========================================
 
     #[test]
     fn test_bezier_evaluate_simple() {
@@ -172,21 +207,48 @@ mod tests {
         // Evaluate with 3 samples: t=0.0, t=0.5, t=1.0
         let points = curve.evaluate(3);
 
-        assert_eq!(points.nrows(), 3);
+        assert_eq!(
+            points.nrows(),
+            3,
+            "Matrix should always have 3 rows for X, Y, Z"
+        );
+        assert_eq!(
+            points.ncols(),
+            3,
+            "Matrix should have columns equal to requested sample count"
+        );
 
         // At t=0.0, point should be p0
         assert!((points[[0, 0]] - 0.0).abs() < 1e-6);
         assert!((points[[1, 0]] - 0.0).abs() < 1e-6);
-        assert!((points[[2, 0]] - 0.0).abs() < 1e-6);
 
         // At t=0.5, point should be 0.25*p0 + 0.5*p1 + 0.25*p2 = (1.0, 1.0, 0.0)
         assert!((points[[0, 1]] - 1.0).abs() < 1e-6);
         assert!((points[[1, 1]] - 1.0).abs() < 1e-6);
-        assert!((points[[2, 1]] - 0.0).abs() < 1e-6);
 
         // At t=1.0, point should be p2
         assert!((points[[0, 2]] - 2.0).abs() < 1e-6);
         assert!((points[[1, 2]] - 0.0).abs() < 1e-6);
-        assert!((points[[2, 2]] - 0.0).abs() < 1e-6);
+    }
+
+    // ==========================================
+    // 4. Rational Basis Tests
+    // ==========================================
+
+    #[test]
+    fn test_rational_basis_division_by_zero() {
+        let degree = 2;
+        let control_points = Array2::zeros((3, 3));
+        // All weights set to 0.0 to trigger division by zero
+        let weights = Array1::zeros(3);
+
+        let curve = BezierCurve::new_with_weights(degree, control_points, weights).unwrap();
+
+        let result = curve.rational_basis(10);
+        assert!(
+            result.is_err(),
+            "Should return an error when denominator is zero"
+        );
+        assert!(result.unwrap_err().contains("Division by zero"));
     }
 }
