@@ -1,24 +1,43 @@
-use pyo3::{exceptions::PyValueError, prelude::*};
+use ndarray::Array2;
+use pyo3::prelude::*;
 
-use core_rust::geometry::bezier::compute_knot_insertion_matrix as rs_compute_knot_insertion_matrix;
+use core_rust::geometry::bezier::BezierCurve;
 
-#[pyfunction]
-#[pyo3(name = "compute_knot_insertion_matrix")]
-pub fn compute_knot_insertion_matrix(
-    knots: Vec<f64>,
-    degree: usize,
-    segment_index: usize,
-) -> PyResult<Vec<Vec<f64>>> {
-    let matrix = rs_compute_knot_insertion_matrix(&knots, degree, segment_index)
-        .map_err(PyValueError::new_err)?;
+#[pyclass]
+pub struct PyBezierCurve {
+    pub inner: BezierCurve,
+}
 
-    let mut py_matrix = Vec::with_capacity(matrix.nrows());
-    for r in 0..matrix.nrows() {
-        let mut row = Vec::with_capacity(matrix.ncols());
-        for c in 0..matrix.ncols() {
-            row.push(matrix[(r, c)]);
+#[pymethods]
+impl PyBezierCurve {
+    // NOTE: Clone data points during the conversion maybe will be opti
+    #[new]
+    pub fn new(degree: usize, points: Vec<[f64; 3]>) -> PyResult<Self> {
+        let mut controle_points = Array2::<f64>::zeros((points.len(), 3));
+        for (i, p) in points.iter().enumerate() {
+            controle_points[[i, 0]] = p[0];
+            controle_points[[i, 1]] = p[1];
+            controle_points[[i, 2]] = p[2];
         }
-        py_matrix.push(row);
+
+        let inner = BezierCurve::new(degree, controle_points);
+        Ok(Self { inner })
     }
-    Ok(py_matrix)
+
+    pub fn evaluate(&self, sample: usize) -> PyResult<Vec<[f64; 3]>> {
+        let curve_points = self.inner.evaluate(sample);
+
+        let cols = curve_points.ncols();
+        let mut py_points = Vec::with_capacity(cols);
+
+        for i in 0..cols {
+            py_points.push([
+                curve_points[[0, i]],
+                curve_points[[1, i]],
+                curve_points[[2, i]],
+            ]);
+        }
+
+        Ok(py_points)
+    }
 }

@@ -301,6 +301,8 @@ version = "0.1.0"
 dependencies = [
  "core_rust",
  "nalgebra",
+ "ndarray",
+ "num-integer",
  "pyo3",
 ]
 
