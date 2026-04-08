@@ -263,7 +263,8 @@ impl SplineCurve {
             let (controle_points, weights) =
                 self.new_controle_points(i, ctrl_pt_start_idx, ctrl_pt_end_idx)?;
 
-            let bezier_curve = BezierCurve::new_with_weights(self.degree, controle_points, weights);
+            let bezier_curve =
+                BezierCurve::new_with_weights(self.degree, controle_points, weights)?;
             bezier_curves.push(bezier_curve);
         }
         Ok(bezier_curves)
@@ -283,7 +284,6 @@ impl ParametricCurve for SplineCurve {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::{core::knot::KnotVector, geometry::spline::SplineCurve, traits::ParametricCurve};
     use ndarray::{Array1, Array2, array};
 

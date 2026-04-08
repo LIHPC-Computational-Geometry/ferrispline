@@ -9,25 +9,45 @@ pub struct BezierCurve {
 }
 
 impl BezierCurve {
-    // TODO: create an error if controle_points.len() != degree + 1 && weights.len() != controle_points.len()
     pub fn new_with_weights(
         degree: usize,
         controle_points: Array2<f64>,
         weights: Array1<f64>,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, String> {
+        if controle_points.nrows() != weights.len() {
+            return Err(format!(
+                "Weight count mismatch: {} points vs {} weights",
+                controle_points.nrows(),
+                weights.len()
+            ));
+        }
+        if controle_points.nrows() != degree + 1 {
+            return Err(format!(
+                "Degree count mismatch: {} control points vs {} degree",
+                controle_points.nrows(),
+                degree
+            ));
+        }
+        Ok(Self {
             degree,
             weights,
             controle_points,
-        }
+        })
     }
 
-    pub fn new(degree: usize, controle_points: Array2<f64>) -> Self {
-        Self {
+    pub fn new(degree: usize, controle_points: Array2<f64>) -> Result<Self, String> {
+        if controle_points.nrows() != degree + 1 {
+            return Err(format!(
+                "Degree count mismatch: {} control points vs {} degree",
+                controle_points.nrows(),
+                degree
+            ));
+        }
+        Ok(Self {
             degree,
             weights: Array1::from(vec![1.0; controle_points.nrows()]),
             controle_points,
-        }
+        })
     }
 
     pub fn bernstein(&self, v: usize, t: &Array1<f64>) -> Array1<f64> {
@@ -40,9 +60,6 @@ impl BezierCurve {
             .collect()
     }
 
-    // NOTE: Rester en dimension 1 avec uniquement des curve pour le moment
-    // NOTE: Faire des fonctions de modification des courbes
-    // a implémenter dans le projet de Frank
     /// Evaluate Bezier curve for a number of points equal to `sample`
     pub fn evaluate(&self, sample: usize) -> Array2<f64> {
         let t: Array1<f64> = Array1::linspace(0.0, 1.0, sample);
@@ -110,15 +127,15 @@ mod tests {
         let degree = 3;
 
         // At t=0, only the first polynomial (v=0) is 1.0 (using 1x0 matrix for dummy)
-        let curve_v0: BezierCurve = BezierCurve::new(degree, Array2::zeros((1, 0)));
+        let curve_v0: BezierCurve = BezierCurve::new(degree, Array2::zeros((1, 0))).unwrap();
         assert_eq!(curve_v0.bernstein(0, &array![0.0]), array![1.0]);
-        let curve_v1: BezierCurve = BezierCurve::new(degree, Array2::zeros((1, 0)));
+        let curve_v1: BezierCurve = BezierCurve::new(degree, Array2::zeros((1, 0))).unwrap();
         assert_eq!(curve_v1.bernstein(1, &array![0.0]), array![0.0]);
 
         // At t=1, only the last polynomial (v=degree) is 1.0
-        let curve: BezierCurve = BezierCurve::new(degree, Array2::zeros((1, 0)));
+        let curve: BezierCurve = BezierCurve::new(degree, Array2::zeros((1, 0))).unwrap();
         assert_eq!(curve.bernstein(degree, &array![1.0]), array![1.0]);
-        let curve: BezierCurve = BezierCurve::new(degree, Array2::zeros((1, 0)));
+        let curve: BezierCurve = BezierCurve::new(degree, Array2::zeros((1, 0))).unwrap();
         assert_eq!(curve.bernstein(0, &array![1.0]), array![0.0]);
     }
 
@@ -134,7 +151,7 @@ mod tests {
         let mut totals = vec![0.0; 10];
 
         for v in 0..=degree {
-            let curve: BezierCurve = BezierCurve::new(degree, Array2::zeros((0, 0)));
+            let curve: BezierCurve = BezierCurve::new(degree, Array2::zeros((0, 0))).unwrap();
             let results = curve.bernstein(v, &t_vals);
             for (i, &res) in results.iter().enumerate() {
                 totals[i] += res;
@@ -150,7 +167,7 @@ mod tests {
     fn test_bezier_evaluate_simple() {
         let degree = 2;
         let control_points = array![[0.0, 0.0, 0.0], [1.0, 2.0, 0.0], [2.0, 0.0, 0.0]];
-        let curve = BezierCurve::new(degree, control_points);
+        let curve = BezierCurve::new(degree, control_points).unwrap();
 
         // Evaluate with 3 samples: t=0.0, t=0.5, t=1.0
         let points = curve.evaluate(3);

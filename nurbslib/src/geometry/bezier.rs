@@ -1,5 +1,5 @@
 use ndarray::Array2;
-use pyo3::prelude::*;
+use pyo3::{exceptions::PyValueError, prelude::*};
 
 use core_rust::geometry::bezier::BezierCurve;
 
@@ -20,7 +20,7 @@ impl PyBezierCurve {
             controle_points[[i, 2]] = p[2];
         }
 
-        let inner = BezierCurve::new(degree, controle_points);
+        let inner = BezierCurve::new(degree, controle_points).map_err(PyValueError::new_err)?;
         Ok(Self { inner })
     }
 
