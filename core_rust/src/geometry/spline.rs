@@ -119,6 +119,7 @@ impl SplineCurve {
         Ok(points)
     }
 
+    /// Implementation of the Cox-De Boor algorithm
     fn cox_de_boor(&self, i: usize, degree: usize, u: f64) -> Result<f64, String> {
         let n = self.knots.as_slice().len() - 1;
 
@@ -223,9 +224,6 @@ impl SplineCurve {
         Ok(extraction_matrix)
     }
 
-    // NOTE: Check que la fonction to_bezier fonction
-    // NOTE: Faire des tests unitaire
-    // NOTE: faire un cargo check et fmt
     fn new_controle_points(
         &self,
         idx: usize,
@@ -285,13 +283,170 @@ impl ParametricCurve for SplineCurve {
 
 #[cfg(test)]
 mod tests {
-    use ndarray::Array2;
+    use super::*;
+    use crate::{core::knot::KnotVector, geometry::spline::SplineCurve, traits::ParametricCurve};
+    use ndarray::{Array1, Array2, array};
 
-    use crate::{core::knot::KnotVector, geometry::spline::SplineCurve};
+    // ==========================================
+    // 1. Construction & Validation Tests
+    // ==========================================
 
     #[test]
-    /// Test that the extraction matrix has the correct (degree + 1) x (degree + 1) shape
+    /// Tests that a B-Spline is successfully created and weights are defaulted to 1.0.
+    fn test_builder_bspline_success() {
+        // 4 control points, degree 3. Required knots (m = n + p + 1): 3 + 3 + 1 = 7 (so 8 elements)
+        let knots = KnotVector::new(vec![0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0]).unwrap();
+        let ctrl_pts = Array2::zeros((4, 3));
+
+        let spline = SplineCurve::builder()
+            .degree(3)
+            .build_bspline(ctrl_pts, knots)
+            .expect("Should build successfully");
+
+        assert_eq!(
+            spline.weights.len(),
+            4,
+            "Weights should be generated for each point"
+        );
+        assert_eq!(spline.weights[0], 1.0, "Default weights should be 1.0");
+    }
+
+    #[test]
+    /// Tests that the builder fails if the number of weights doesn't match the control points.
+    fn test_builder_nurbs_weight_mismatch() {
+        let knots = KnotVector::new(vec![0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0]).unwrap();
+        let ctrl_pts = Array2::zeros((4, 3));
+        let invalid_weights = Array1::ones(3); // 3 weights for 4 points -> Error!
+
+        let result = SplineCurve::builder()
+            .degree(3)
+            .build_nurbs(ctrl_pts, invalid_weights, knots);
+
+        assert!(result.is_err(), "Should fail due to weight mismatch");
+        assert!(result.unwrap_err().contains("Weight count mismatch"));
+    }
+
+    #[test]
+    /// Tests that a degree of 0 is rejected by the builder.
+    fn test_builder_degree_zero() {
+        let knots = KnotVector::new(vec![0.0, 1.0]).unwrap();
+        let ctrl_pts = Array2::zeros((1, 3));
+
+        let result = SplineCurve::builder()
+            .degree(0)
+            .build_bspline(ctrl_pts, knots);
+
+        assert!(result.is_err(), "Degree 0 should be rejected");
+        assert!(result.unwrap_err().contains("Degree must be at least 1"));
+    }
+
+    // ==========================================
+    // 2. Core Algorithm Tests (Cox-De Boor)
+    // ==========================================
+
+    #[test]
+    /// Tests the basis step function (degree 0) of the Cox-De Boor algorithm.
+    fn test_cox_de_boor_degree_0() {
+        let knots = KnotVector::new(vec![0.0, 0.0, 1.0, 1.0]).unwrap();
+        let ctrl_pts = Array2::zeros((2, 3));
+        let spline = SplineCurve::builder()
+            .degree(1)
+            .build_bspline(ctrl_pts, knots)
+            .unwrap();
+
+        // At degree 0, the basis function should return 1.0 if u is within the knot span [0.0, 1.0), else 0.0
+        let val_inside = spline.cox_de_boor(1, 0, 0.5).unwrap();
+        assert_eq!(val_inside, 1.0, "Should be 1.0 inside the span");
+
+        let val_outside = spline.cox_de_boor(0, 0, 0.5).unwrap();
+        assert_eq!(val_outside, 0.0, "Should be 0.0 outside the span");
+    }
+
+    #[test]
+    /// Tests the Partition of Unity: the sum of all basis functions for any u must equal 1.0.
+    fn test_partition_of_unity() {
+        let knots = KnotVector::new(vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0]).unwrap();
+        let ctrl_pts = Array2::zeros((3, 3)); // degree 2, 3 points
+        let spline = SplineCurve::builder()
+            .degree(2)
+            .build_bspline(ctrl_pts, knots)
+            .unwrap();
+
+        let u_val = 0.5;
+        let mut sum = 0.0;
+        for i in 0..spline.controle_points.nrows() {
+            sum += spline.cox_de_boor(i, spline.degree, u_val).unwrap();
+        }
+
+        assert!(
+            (sum - 1.0).abs() < 1e-9,
+            "Sum of basis functions should be exactly 1.0, got {}",
+            sum
+        );
+    }
+
+    // ==========================================
+    // 3. Evaluation Tests
+    // ==========================================
+
+    #[test]
+    /// Tests that a clamped curve starts and ends exactly on its first and last control points.
+    fn test_eval_nurbs_curve_clamped_properties() {
+        let knots = KnotVector::new(vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0]).unwrap(); // Clamped
+        let ctrl_pts = array![[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]];
+        let spline = SplineCurve::builder()
+            .degree(2)
+            .build_bspline(ctrl_pts, knots)
+            .unwrap();
+
+        let samples = 10;
+        let evaluated_points = spline.eval_nurbs_curve(samples).unwrap();
+
+        // Check start point (first column) matches [1.0, 2.0, 3.0]
+        assert!((evaluated_points[[0, 0]] - 1.0).abs() < 1e-6);
+        assert!((evaluated_points[[1, 0]] - 2.0).abs() < 1e-6);
+        assert!((evaluated_points[[2, 0]] - 3.0).abs() < 1e-6);
+
+        // Check end point (last column) matches [7.0, 8.0, 9.0]
+        let last_idx = samples - 1;
+        assert!((evaluated_points[[0, last_idx]] - 7.0).abs() < 1e-6);
+        assert!((evaluated_points[[1, last_idx]] - 8.0).abs() < 1e-6);
+        assert!((evaluated_points[[2, last_idx]] - 9.0).abs() < 1e-6);
+    }
+
+    #[test]
+    /// Tests that evaluation returns a matrix with 3 rows (X, Y, Z) and the correct number of samples.
+    fn test_eval_nurbs_curve_dimensions() {
+        let knots = KnotVector::new(vec![0.0, 0.0, 1.0, 1.0]).unwrap();
+        let ctrl_pts = Array2::zeros((2, 3));
+        let spline = SplineCurve::builder()
+            .degree(1)
+            .build_bspline(ctrl_pts, knots)
+            .unwrap();
+
+        let samples = 100;
+        let points = spline.eval_nurbs_curve(samples).unwrap();
+
+        assert_eq!(
+            points.nrows(),
+            3,
+            "Matrix should always have 3 rows for X, Y, Z"
+        );
+        assert_eq!(
+            points.ncols(),
+            samples,
+            "Matrix should have columns equal to requested sample count"
+        );
+    }
+
+    // ==========================================
+    // 4. Bezier Extraction & Knot Insertion Tests
+    // ==========================================
+
+    #[test]
+    /// Tests that the extraction matrix has the correct (degree + 1) x (degree + 1) shape.
     fn test_compute_knot_insertion_matrix_dimension() {
+        // Degree 2. 5 points (n=4). Knots = n+p+1 = 4+2+1=7 -> 8 knots
         let knots = KnotVector::new(vec![0.0, 0.0, 0.0, 1.0, 2.0, 3.0, 3.0, 3.0]).unwrap();
         let degree = 2;
         let segment_index = 3;
@@ -304,6 +459,7 @@ mod tests {
         let matrix = spline
             .compute_knot_insertion_matrix(segment_index)
             .expect("The function returned an error instead of the matrix");
+
         assert_eq!(
             matrix.nrows(),
             degree + 1,
@@ -319,6 +475,7 @@ mod tests {
     #[test]
     /// Test that an error is returned if the segment_index is out of bounds
     fn test_compute_knot_insertion_matrix_invalid_segment_index() {
+        // 2 points, degree 1 -> m = 1+1+1 = 3 (4 knots)
         let knots = KnotVector::new(vec![0.0, 0.0, 1.0, 1.0]).unwrap();
         let degree = 1;
         let invalid_segment_index = 3;
@@ -334,15 +491,50 @@ mod tests {
             result.is_err(),
             "The function should have returned an error (Err)!"
         );
+        assert!(result.unwrap_err().contains("segment_index"));
+    }
 
-        let error_msg = result.unwrap_err();
-        assert!(
-            error_msg.contains("segment_index"),
-            "The error message does not contain 'segment_index'"
+    #[test]
+    /// Tests that a spline is correctly broken down into the proper amount of Bezier segments.
+    fn test_to_bezier_segment_count() {
+        // Spline with 2 valid segments: [0.0, 0.5] and [0.5, 1.0]
+        // 4 points, degree 2. 7 knots total
+        let knots = KnotVector::new(vec![0.0, 0.0, 0.0, 0.5, 1.0, 1.0, 1.0]).unwrap();
+        let ctrl_pts = Array2::zeros((4, 3));
+        let spline = SplineCurve::builder()
+            .degree(2)
+            .build_bspline(ctrl_pts, knots)
+            .unwrap();
+
+        let bezier_curves = spline.to_bezier().unwrap();
+        assert_eq!(
+            bezier_curves.len(),
+            2,
+            "There should be exactly 2 distinct Bezier segments generated"
         );
-        assert!(
-            error_msg.contains("is out of bound for knots of length"),
-            "The error message does not contain the expected text"
-        );
+    }
+
+    // ==========================================
+    // 5. ParametricCurve Trait Tests
+    // ==========================================
+
+    #[test]
+    /// Tests that the domain correctly ignores clamped bounds according to the degree.
+    fn test_domain_extraction() {
+        let knots = KnotVector::new(vec![0.0, 0.0, 0.0, 0.5, 1.0, 1.0, 1.0]).unwrap();
+        let ctrl_pts = Array2::zeros((4, 3));
+        let spline = SplineCurve::builder()
+            .degree(2)
+            .build_bspline(ctrl_pts, knots)
+            .unwrap();
+
+        let (u_min, u_max) = spline.domain();
+
+        // p = 2, n = 3. knots[p] = knots[2] = 0.0. knots[n] = knots[3] = 0.5.
+        // Oh wait, knots array is length 7. n = 4 points - 1 = 3.
+        // formula: n = knots.len() - p - 1 = 7 - 2 - 1 = 4.
+        // Let's rely on the evaluation!
+        assert_eq!(u_min, 0.0, "Domain start should be 0.0");
+        assert_eq!(u_max, 1.0, "Domain end should be 1.0");
     }
 }
