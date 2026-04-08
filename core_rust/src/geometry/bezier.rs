@@ -88,11 +88,10 @@ impl BezierCurve {
 
     /// Evaluate Rationnal Bezier curve with weightsfor a number of points equal to `sample`
     pub fn evaluate_rational(&self, sample: usize) -> Result<Array2<f64>, String> {
-        let curve: Array2<f64> = self.rational_basis(sample)?;
-        curve.t();
-        curve.dot(&self.controle_points);
-
-        todo!()
+        let basis: Array2<f64> = self.rational_basis(sample)?;
+        let t_basis = basis.t();
+        let curve_points = t_basis.dot(&self.controle_points);
+        Ok(curve_points.t().to_owned())
     }
 
     fn rational_basis(&self, sample: usize) -> Result<Array2<f64>, String> {

@@ -3,8 +3,6 @@ from scipy.special import comb
 
 from ..core_types import MatrixMxN, MatrixNx3, MatrixNxN, VectorN
 
-import nurbslib
-
 
 # NOTE segment_index is increment number `i` of the `figure` function with range (3, 10)
 def compute_knot_insertion_matrix(
@@ -181,7 +179,7 @@ def bezier_curves(
         if ctrl_pt_start_idx < 0 or ctrl_pt_end_idx >= len(control_points):
             continue
 
-        knot_insertion_matrix: MatrixNxN = nurbslib.compute_knot_insertion_matrix(
+        knot_insertion_matrix: MatrixNxN = compute_knot_insertion_matrix(
             knots, degree, i
         )
 

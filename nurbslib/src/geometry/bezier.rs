@@ -35,8 +35,19 @@ impl PyBezierCurve {
         self.inner.degree
     }
 
-    pub fn evaluate(&self, sample: usize) -> PyResult<Vec<[f64; 3]>> {
-        let curve_points = self.inner.evaluate(sample);
+    // On définit la signature Python : sample est obligatoire, rational est optionnel (None par défaut)
+    #[pyo3(signature = (sample, rational=None))]
+    pub fn evaluate(&self, sample: usize, rational: Option<bool>) -> PyResult<Vec<[f64; 3]>> {
+        let use_rational =
+            rational.unwrap_or_else(|| self.inner.weights.iter().any(|&w| (w - 1.0).abs() > 1e-9));
+
+        let curve_points = if use_rational {
+            self.inner
+                .evaluate_rational(sample)
+                .map_err(PyValueError::new_err)?
+        } else {
+            self.inner.evaluate(sample)
+        };
 
         let cols = curve_points.ncols();
         let mut py_points = Vec::with_capacity(cols);
