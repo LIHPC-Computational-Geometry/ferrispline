@@ -1,4 +1,4 @@
-use ndarray::Array2;
+use ndarray::{Array1, Array2};
 use pyo3::{exceptions::PyValueError, prelude::*};
 
 use core_rust::geometry::bezier::BezierCurve;
@@ -12,7 +12,7 @@ pub struct PyBezierCurve {
 impl PyBezierCurve {
     // NOTE: Clone data points during the conversion maybe will be opti
     #[new]
-    pub fn new(degree: usize, points: Vec<[f64; 3]>) -> PyResult<Self> {
+    pub fn new(degree: usize, points: Vec<[f64; 3]>, weights: Option<Vec<f64>>) -> PyResult<Self> {
         let mut controle_points = Array2::<f64>::zeros((points.len(), 3));
         for (i, p) in points.iter().enumerate() {
             controle_points[[i, 0]] = p[0];
@@ -20,8 +20,19 @@ impl PyBezierCurve {
             controle_points[[i, 2]] = p[2];
         }
 
-        let inner = BezierCurve::new(degree, controle_points).map_err(PyValueError::new_err)?;
+        let inner = match weights {
+            Some(w) => {
+                let weights_array = Array1::from(w);
+                BezierCurve::new_with_weights(degree, controle_points, weights_array)
+                    .map_err(PyValueError::new_err)?
+            }
+            None => BezierCurve::new(degree, controle_points).map_err(PyValueError::new_err)?,
+        };
         Ok(Self { inner })
+    }
+
+    pub fn degree(&self) -> usize {
+        self.inner.degree
     }
 
     pub fn evaluate(&self, sample: usize) -> PyResult<Vec<[f64; 3]>> {
