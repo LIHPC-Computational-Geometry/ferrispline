@@ -22,12 +22,12 @@ impl KnotVector {
                 m, n, degree
             ));
         }
-        Ok(())
+        Ok(&self)
     }
 
     /// Calculates the multiplicity of a given knot value.
     pub fn multiplicity(&self, knot_value: f64) -> usize {
-        self.0
+        self.as_slice()
             .iter()
             .filter(|&&k| (k - knot_value).abs() < 1e-9)
             .count()

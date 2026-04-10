@@ -4,8 +4,8 @@ use num_integer::binomial;
 #[derive(Debug)]
 pub struct BezierCurve {
     pub degree: usize,
-    pub weights: Array1<f64>,
     pub controle_points: Array2<f64>,
+    pub weights: Array1<f64>,
 }
 
 impl BezierCurve {
@@ -69,18 +69,11 @@ impl BezierCurve {
         for i in 0..=self.degree {
             let forces: Array1<f64> = self.bernstein(i, &t);
 
-            let cp_x = self.controle_points[[i, 0]];
-            let cp_y = self.controle_points[[i, 1]];
-            let cp_z = self.controle_points[[i, 2]];
-
-            let mut row_x = points.row_mut(0);
-            row_x += &(&forces * cp_x);
-
-            let mut row_y = points.row_mut(1);
-            row_y += &(&forces * cp_y);
-
-            let mut row_z = points.row_mut(2);
-            row_z += &(&forces * cp_z);
+            for dir in 0..3 {
+                let cp = self.controle_points[[i, dir]];
+                let mut row = points.row_mut(dir);
+                row += &(&forces * cp);
+            }
         }
 
         points
