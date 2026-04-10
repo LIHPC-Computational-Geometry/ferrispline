@@ -76,7 +76,8 @@ impl SplineCurveBuilder {
         if self.degree == 0 {
             return Err("Degree must be at least 1.".to_string());
         }
-        knots.lenght_check(num_ctrl_points, self.degree)
+        knots.lenght_check(num_ctrl_points, self.degree)?;
+        Ok(())
     }
 }
 

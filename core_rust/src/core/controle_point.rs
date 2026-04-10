@@ -46,9 +46,9 @@ pub struct RationalPoint3 {
 
 impl RationalPoint3 {
     #[allow(dead_code)]
-    fn weight(&mut self, weight: f64) -> f64 {
+    fn weight(mut self, weight: f64) -> Self {
         self.weight = weight;
-        self.weight
+        self
     }
 }
 

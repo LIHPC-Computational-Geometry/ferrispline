@@ -13,7 +13,7 @@ impl KnotVector {
         &self.0
     }
 
-    pub fn lenght_check(&self, num_control_points: usize, degree: usize) -> Result<(), String> {
+    pub fn lenght_check(&self, num_control_points: usize, degree: usize) -> Result<&Self, String> {
         let n = num_control_points - 1;
         let m = self.as_slice().len() - 1;
         if m != n + degree + 1 {
@@ -22,12 +22,12 @@ impl KnotVector {
                 m, n, degree
             ));
         }
-        Ok(())
+        Ok(self)
     }
 
     /// Calculates the multiplicity of a given knot value.
     pub fn multiplicity(&self, knot_value: f64) -> usize {
-        self.0
+        self.as_slice()
             .iter()
             .filter(|&&k| (k - knot_value).abs() < 1e-9)
             .count()
