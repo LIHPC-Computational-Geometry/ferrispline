@@ -21,11 +21,11 @@ impl PySplineCurve {
         weight_py: Vec<f64>,
         knots: Vec<f64>,
     ) -> PyResult<Self> {
-        let mut controle_points = Array2::<f64>::zeros((points_py.len(), 3));
+        let mut control_points = Array2::<f64>::zeros((points_py.len(), 3));
         for (i, p) in points_py.iter().enumerate() {
-            controle_points[[i, 0]] = p[0];
-            controle_points[[i, 1]] = p[1];
-            controle_points[[i, 2]] = p[2];
+            control_points[[i, 0]] = p[0];
+            control_points[[i, 1]] = p[1];
+            control_points[[i, 2]] = p[2];
         }
 
         let weights = Array1::from(weight_py);
@@ -34,7 +34,7 @@ impl PySplineCurve {
 
         let inner = SplineCurve::builder()
             .degree(degree)
-            .build_nurbs(controle_points, weights, knot_vector)
+            .build_nurbs(control_points, weights, knot_vector)
             .map_err(PyValueError::new_err)?;
 
         Ok(Self { inner })

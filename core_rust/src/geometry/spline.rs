@@ -9,7 +9,7 @@ use ndarray::{Array1, Array2, Axis, concatenate, s};
 #[derive(Debug)]
 pub struct SplineCurve {
     pub degree: usize,
-    pub controle_points: Array2<f64>,
+    pub control_points: Array2<f64>,
     pub weights: Array1<f64>,
     pub knots: KnotVector,
 }
@@ -37,14 +37,14 @@ impl SplineCurveBuilder {
 
     pub fn build_bspline(
         self,
-        controle_points: Array2<f64>,
+        control_points: Array2<f64>,
         knots: KnotVector,
     ) -> Result<SplineCurve, String> {
-        self.validate(controle_points.nrows(), &knots)?;
-        let weights = Array1::ones(controle_points.nrows());
+        self.validate(control_points.nrows(), &knots)?;
+        let weights = Array1::ones(control_points.nrows());
         Ok(SplineCurve {
             degree: self.degree,
-            controle_points,
+            control_points,
             weights,
             knots,
         })
@@ -52,21 +52,21 @@ impl SplineCurveBuilder {
 
     pub fn build_nurbs(
         self,
-        controle_points: Array2<f64>,
+        control_points: Array2<f64>,
         weights: Array1<f64>,
         knots: KnotVector,
     ) -> Result<SplineCurve, String> {
-        self.validate(controle_points.nrows(), &knots)?;
-        if controle_points.nrows() != weights.len() {
+        self.validate(control_points.nrows(), &knots)?;
+        if control_points.nrows() != weights.len() {
             return Err(format!(
                 "Weight count mismatch: {} points vs {} weights",
-                controle_points.len(),
+                control_points.len(),
                 weights.len()
             ));
         }
         Ok(SplineCurve {
             degree: self.degree,
-            controle_points,
+            control_points,
             weights,
             knots,
         })
@@ -97,11 +97,11 @@ impl SplineCurve {
             let mut numerator = Vector3::zeros();
             let mut denominator = 0.0;
 
-            for i in 0..self.controle_points.nrows() {
+            for i in 0..self.control_points.nrows() {
                 let n = self.cox_de_boor(i, self.degree, *u)?;
                 let weight_n = self.weights[i] * n;
 
-                let cp_row = self.controle_points.row(i);
+                let cp_row = self.control_points.row(i);
                 numerator += Vector3::new(cp_row[0], cp_row[1], cp_row[2]) * weight_n;
                 denominator += weight_n;
             }
@@ -232,7 +232,7 @@ impl SplineCurve {
     ) -> Result<(Array2<f64>, Array1<f64>), String> {
         let knot_insertion_matrix = self.compute_knot_insertion_matrix(idx)?;
 
-        let local_ctrl_pt = &self.controle_points.slice(s![start_idx..end_idx, ..]);
+        let local_ctrl_pt = &self.control_points.slice(s![start_idx..end_idx, ..]);
         let local_weights = &self.weights.slice(s![start_idx..end_idx]);
 
         let weighted_points = &local_weights.insert_axis(Axis(1)) * local_ctrl_pt;
@@ -249,22 +249,21 @@ impl SplineCurve {
     /// Converte a NURBS curve to a Bezier curve
     pub fn to_bezier(&self) -> Result<Vec<BezierCurve>, String> {
         let mut bezier_curves: Vec<BezierCurve> = Vec::new();
-        for i in self.degree..self.controle_points.nrows() {
+        for i in self.degree..self.control_points.nrows() {
             if self.knots.as_slice()[i] == self.knots.as_slice()[i + 1] {
                 continue;
             }
             let ctrl_pt_start_idx = i - self.degree;
             let ctrl_pt_end_idx = i + 1;
 
-            if ctrl_pt_end_idx >= self.controle_points.len() {
+            if ctrl_pt_end_idx >= self.control_points.len() {
                 continue;
             }
 
-            let (controle_points, weights) =
+            let (control_points, weights) =
                 self.new_controle_points(i, ctrl_pt_start_idx, ctrl_pt_end_idx)?;
 
-            let bezier_curve =
-                BezierCurve::new_with_weights(self.degree, controle_points, weights)?;
+            let bezier_curve = BezierCurve::new_with_weights(self.degree, control_points, weights)?;
             bezier_curves.push(bezier_curve);
         }
         Ok(bezier_curves)
@@ -374,7 +373,7 @@ mod tests {
 
         let u_val = 0.5;
         let mut sum = 0.0;
-        for i in 0..spline.controle_points.nrows() {
+        for i in 0..spline.control_points.nrows() {
             sum += spline.cox_de_boor(i, spline.degree, u_val).unwrap();
         }
 

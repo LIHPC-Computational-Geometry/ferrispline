@@ -5,48 +5,48 @@ use num_integer::binomial;
 pub struct BezierCurve {
     pub degree: usize,
     pub weights: Array1<f64>,
-    pub controle_points: Array2<f64>,
+    pub control_points: Array2<f64>,
 }
 
 impl BezierCurve {
     pub fn new_with_weights(
         degree: usize,
-        controle_points: Array2<f64>,
+        control_points: Array2<f64>,
         weights: Array1<f64>,
     ) -> Result<Self, String> {
-        if controle_points.nrows() != weights.len() {
+        if control_points.nrows() != weights.len() {
             return Err(format!(
                 "Weight count mismatch: {} points vs {} weights",
-                controle_points.nrows(),
+                control_points.nrows(),
                 weights.len()
             ));
         }
-        if controle_points.nrows() != degree + 1 {
+        if control_points.nrows() != degree + 1 {
             return Err(format!(
                 "Degree count mismatch: {} control points vs {} degree",
-                controle_points.nrows(),
+                control_points.nrows(),
                 degree
             ));
         }
         Ok(Self {
             degree,
             weights,
-            controle_points,
+            control_points,
         })
     }
 
-    pub fn new(degree: usize, controle_points: Array2<f64>) -> Result<Self, String> {
-        if controle_points.nrows() != degree + 1 {
+    pub fn new(degree: usize, control_points: Array2<f64>) -> Result<Self, String> {
+        if control_points.nrows() != degree + 1 {
             return Err(format!(
                 "Degree count mismatch: {} control points vs {} degree",
-                controle_points.nrows(),
+                control_points.nrows(),
                 degree
             ));
         }
         Ok(Self {
             degree,
-            weights: Array1::from(vec![1.0; controle_points.nrows()]),
-            controle_points,
+            weights: Array1::from(vec![1.0; control_points.nrows()]),
+            control_points,
         })
     }
 
@@ -69,9 +69,9 @@ impl BezierCurve {
         for i in 0..=self.degree {
             let forces: Array1<f64> = self.bernstein(i, &t);
 
-            let cp_x = self.controle_points[[i, 0]];
-            let cp_y = self.controle_points[[i, 1]];
-            let cp_z = self.controle_points[[i, 2]];
+            let cp_x = self.control_points[[i, 0]];
+            let cp_y = self.control_points[[i, 1]];
+            let cp_z = self.control_points[[i, 2]];
 
             let mut row_x = points.row_mut(0);
             row_x += &(&forces * cp_x);
@@ -90,7 +90,7 @@ impl BezierCurve {
     pub fn evaluate_rational(&self, sample: usize) -> Result<Array2<f64>, String> {
         let basis: Array2<f64> = self.rational_basis(sample)?;
         let t_basis = basis.t();
-        let curve_points = t_basis.dot(&self.controle_points);
+        let curve_points = t_basis.dot(&self.control_points);
         Ok(curve_points.t().to_owned())
     }
 
