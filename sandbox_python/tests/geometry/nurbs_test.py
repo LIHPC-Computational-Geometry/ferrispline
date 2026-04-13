@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-from nurbs_math.geometry.nurbs import eval_nurbs_curve, eval_bspline
+from nurbs_math.geometry.nurbs import eval_nurbs_curve, cox_deboor
 
 
 def test_eval_bspline_degree_zero():
@@ -9,9 +9,9 @@ def test_eval_bspline_degree_zero():
     knots = [0.0, 1.0, 2.0, 3.0]
 
     # Inside the first interval [0.0, 1.0[
-    assert eval_bspline(0, 0, knots, 0.5) == 1.0
+    assert cox_deboor(0, 0, knots, 0.5) == 1.0
     # Outside the first interval
-    assert eval_bspline(0, 0, knots, 1.5) == 0.0
+    assert cox_deboor(0, 0, knots, 1.5) == 0.0
 
 
 def test_eval_bspline_local_support():
@@ -21,7 +21,7 @@ def test_eval_bspline_local_support():
 
     # For i=1, the support domain is strictly between knots[1] and knots[1 + 2 + 1] -> [0.0, 2.0[
     # Evaluating at u=2.5 should yield strictly 0.0
-    assert eval_bspline(1, degree, knots, 2.5) == 0.0
+    assert cox_deboor(1, degree, knots, 2.5) == 0.0
 
 
 def test_eval_bspline_partition_of_unity():
@@ -33,7 +33,7 @@ def test_eval_bspline_partition_of_unity():
     # Number of control points = len(knots) - degree - 1 = 8 - 2 - 1 = 5
     num_ctrl_pts = 5
 
-    total_sum = sum(eval_bspline(i, degree, knots, u) for i in range(num_ctrl_pts))
+    total_sum = sum(cox_deboor(i, degree, knots, u) for i in range(num_ctrl_pts))
     np.testing.assert_allclose(total_sum, 1.0)
 
 
@@ -47,12 +47,12 @@ def test_eval_bspline_partition_of_unity():
     ids=["negative_degree", "negative_index", "index_too_large"],
 )
 def test_eval_bspline_invalid_arguments(i, degree, knots, expected_error):
-    """Test thata ValueError is raised if argument of eval_bspline are not valid."""
+    """Test thata ValueError is raised if argument of cox_deboor are not valid."""
 
     u_constant = 0.5
 
     with pytest.raises(ValueError, match=expected_error):
-        eval_bspline(i, degree, knots, u_constant)
+        cox_deboor(i, degree, knots, u_constant)
 
 
 def test_eval_nurbs_curve_straight_line():

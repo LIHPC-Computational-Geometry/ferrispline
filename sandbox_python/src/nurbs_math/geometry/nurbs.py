@@ -36,7 +36,7 @@ def eval_nurbs_curve(
         numerator: Vector3 = np.zeros(control_points.shape[1])
         denominator: float = 0.0
         for i in range(len(control_points)):
-            N: float = eval_bspline(i, degree, knots, u)
+            N: float = cox_deboor(i, degree, knots, u)
             numerator += ctrl_pt_weights[i] * N * control_points[i]
             denominator += ctrl_pt_weights[i] * N
 
@@ -48,7 +48,7 @@ def eval_nurbs_curve(
     return curve
 
 
-def eval_bspline(i: int, degree: int, knots: list, u: float) -> float:
+def cox_deboor(i: int, degree: int, knots: list, u: float) -> float:
     n: int = len(knots) - 1
 
     if degree < 0:
@@ -71,7 +71,7 @@ def eval_bspline(i: int, degree: int, knots: list, u: float) -> float:
     if (i + degree) < n:
         denom1 = knots[i + degree] - knots[i]
         if denom1 != 0:
-            first_part = (u - knots[i]) / denom1 * eval_bspline(i, degree - 1, knots, u)
+            first_part = (u - knots[i]) / denom1 * cox_deboor(i, degree - 1, knots, u)
 
     if (i + degree + 1) < n:
         denom2 = knots[i + degree + 1] - knots[i + 1]
@@ -79,7 +79,7 @@ def eval_bspline(i: int, degree: int, knots: list, u: float) -> float:
             second_part = (
                 (knots[i + degree + 1] - u)
                 / denom2
-                * eval_bspline(i + 1, degree - 1, knots, u)
+                * cox_deboor(i + 1, degree - 1, knots, u)
             )
 
     return first_part + second_part

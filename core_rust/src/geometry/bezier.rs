@@ -1,134 +1,246 @@
-use nalgebra::DMatrix;
+use ndarray::{Array1, Array2, Axis};
+use num_integer::binomial;
 
-// TODO: create an error type
-pub fn compute_knot_insertion_matrix(
-    knots: &[f64],
-    degree: usize,
-    segment_index: usize,
-) -> Result<DMatrix<f64>, String> {
-    let num_knots = knots.len();
+#[derive(Debug)]
+pub struct BezierCurve {
+    pub degree: usize,
+    pub control_points: Array2<f64>,
+    pub weights: Array1<f64>,
+}
 
-    if segment_index >= num_knots.saturating_sub(1) {
-        return Err(format!(
-            "segment_index ({}) is out of bound for knots of length {}",
-            segment_index, num_knots
-        ));
+impl BezierCurve {
+    pub fn new_with_weights(
+        degree: usize,
+        control_points: Array2<f64>,
+        weights: Array1<f64>,
+    ) -> Result<Self, String> {
+        if control_points.nrows() != weights.len() {
+            return Err(format!(
+                "Weight count mismatch: {} points vs {} weights",
+                control_points.nrows(),
+                weights.len()
+            ));
+        }
+        if control_points.nrows() != degree + 1 {
+            return Err(format!(
+                "Degree count mismatch: {} control points vs {} degree",
+                control_points.nrows(),
+                degree
+            ));
+        }
+        Ok(Self {
+            degree,
+            weights,
+            control_points,
+        })
     }
 
-    let mut extraction_matrix = DMatrix::<f64>::identity(1, 1);
+    pub fn new(degree: usize, control_points: Array2<f64>) -> Result<Self, String> {
+        if control_points.nrows() != degree + 1 {
+            return Err(format!(
+                "Degree count mismatch: {} control points vs {} degree",
+                control_points.nrows(),
+                degree
+            ));
+        }
+        Ok(Self {
+            degree,
+            weights: Array1::from(vec![1.0; control_points.nrows()]),
+            control_points,
+        })
+    }
 
-    for degree_step in 1..(degree + 1) {
-        let start_idx = segment_index.saturating_sub(degree);
-        let end_idx = (segment_index + degree_step + 2).min(num_knots);
+    pub fn bernstein(&self, v: usize, t: &Array1<f64>) -> Array1<f64> {
+        t.iter()
+            .map(|t| {
+                binomial(self.degree, v) as f64
+                    * t.powf(v as f64)
+                    * (1.0 - t).powf((self.degree - v) as f64)
+            })
+            .collect()
+    }
 
-        let local_knots = &knots[start_idx..end_idx];
+    /// Evaluate Bezier curve for a number of points equal to `sample`
+    pub fn evaluate(&self, sample: usize) -> Array2<f64> {
+        let t: Array1<f64> = Array1::linspace(0.0, 1.0, sample);
 
-        let mut tmp_matrix_a = DMatrix::<f64>::zeros(degree_step, degree_step + 1);
-        let mut tmp_matrix_b = DMatrix::<f64>::zeros(degree_step, degree_step + 1);
+        let mut points: Array2<f64> = Array2::zeros((3, sample));
 
-        for row in 0..degree_step {
-            let knot_start = row + 1;
-            let knot_end = knot_start + degree_step;
+        for i in 0..=self.degree {
+            let forces: Array1<f64> = self.bernstein(i, &t);
 
-            // NOTE: May be we want return an error and not 0
-            let distance = if knot_end < local_knots.len() && knot_start < local_knots.len() {
-                local_knots[knot_end] - local_knots[knot_start]
-            } else {
-                0.0
-            };
-
-            let (alpha, beta) = if distance != 0.0 {
-                let alpha_val = (local_knots[degree_step] - local_knots[knot_start]) / distance;
-                let beta_val = (local_knots[degree_step + 1] - local_knots[knot_start]) / distance;
-                (alpha_val, beta_val)
-            } else {
-                (0.0, 0.0)
-            };
-
-            tmp_matrix_a[(row, row)] = 1.0 - alpha;
-            tmp_matrix_a[(row, row + 1)] = alpha;
-
-            tmp_matrix_b[(row, row)] = 1.0 - beta;
-            tmp_matrix_b[(row, row + 1)] = beta;
+            for dir in 0..3 {
+                let cp = self.control_points[[i, dir]];
+                let mut row = points.row_mut(dir);
+                row += &(&forces * cp);
+            }
         }
 
-        let upper_half = &extraction_matrix * &tmp_matrix_a;
-
-        let last_row = extraction_matrix.row(extraction_matrix.nrows() - 1);
-        let last_row_matrix = DMatrix::from_row_slice(
-            1,
-            extraction_matrix.ncols(),
-            last_row.into_owned().as_slice(),
-        );
-
-        let lower_half = &last_row_matrix * &tmp_matrix_b;
-
-        let total_rows = upper_half.nrows() + lower_half.nrows();
-        let mut next_extraction = DMatrix::zeros(total_rows, upper_half.ncols());
-
-        next_extraction
-            .view_mut((0, 0), upper_half.shape())
-            .copy_from(&upper_half);
-
-        next_extraction
-            .view_mut((upper_half.nrows(), 0), lower_half.shape())
-            .copy_from(&lower_half);
-
-        extraction_matrix = next_extraction;
+        points
     }
 
-    Ok(extraction_matrix)
+    /// Evaluate Rationnal Bezier curve with weightsfor a number of points equal to `sample`
+    pub fn evaluate_rational(&self, sample: usize) -> Result<Array2<f64>, String> {
+        let basis: Array2<f64> = self.rational_basis(sample)?;
+        let t_basis = basis.t();
+        let curve_points = t_basis.dot(&self.control_points);
+        Ok(curve_points.t().to_owned())
+    }
+
+    fn rational_basis(&self, sample: usize) -> Result<Array2<f64>, String> {
+        let t: Array1<f64> = Array1::linspace(0.0, 1.0, sample);
+        let mut weighted_strength: Array2<f64> = Array2::zeros((self.degree + 1, sample));
+
+        for i in 0..=self.degree {
+            let forces: Array1<f64> = Array1::from(self.bernstein(i, &t));
+            weighted_strength
+                .row_mut(i)
+                .assign(&(forces * self.weights[i]));
+        }
+        let denominator: Array1<f64> = weighted_strength.sum_axis(Axis(0));
+
+        if denominator.iter().any(|&x| x.abs() < 1e-9) {
+            return Err(
+                "Division by zero in rational basis: denominator contains zero values".to_string(),
+            );
+        }
+        Ok(weighted_strength / denominator)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ndarray::{Array1, Array2, array};
+
+    // ==========================================
+    // 1. Constructor Validation Tests
+    // ==========================================
 
     #[test]
-    /// Test that the extraction matrix has the correct (degree + 1) x (degree + 1) shape
-    fn test_compute_knot_insertion_matrix_dimension() {
-        let knots = vec![0.0, 0.0, 0.0, 1.0, 2.0, 3.0, 3.0, 3.0];
+    fn test_new_degree_mismatch() {
         let degree = 2;
-        let segment_index = 3;
+        // Degree 2 needs 3 control points, we provide 4
+        let control_points = Array2::zeros((4, 3));
 
-        let matrix = compute_knot_insertion_matrix(&knots, degree, segment_index)
-            .expect("The function returned an error instead of the matrix");
-
-        assert_eq!(
-            matrix.nrows(),
-            degree + 1,
-            "The number of rows is incorrect"
+        let result = BezierCurve::new(degree, control_points);
+        assert!(
+            result.is_err(),
+            "Should fail because 4 points != degree 2 + 1"
         );
-        assert_eq!(
-            matrix.ncols(),
-            degree + 1,
-            "The number of columns is incorrect"
-        );
+        assert!(result.unwrap_err().contains("Degree count mismatch"));
     }
 
     #[test]
-    /// Test that an error is returned if the segment_index is out of bounds
-    fn test_compute_knot_insertion_matrix_invalid_segment_index() {
-        let knots = vec![0.0, 0.0, 1.0, 1.0];
-        let degree = 1;
+    fn test_new_with_weights_mismatch() {
+        let degree = 2;
+        let control_points = Array2::zeros((3, 3));
+        let weights = Array1::zeros(2);
 
-        let invalid_segment_index = 3;
-
-        let result = compute_knot_insertion_matrix(&knots, degree, invalid_segment_index);
-
+        let result = BezierCurve::new_with_weights(degree, control_points, weights);
         assert!(
             result.is_err(),
-            "The function should have returned an error (Err)!"
+            "Should fail because point count != weight count"
+        );
+        assert!(result.unwrap_err().contains("Weight count mismatch"));
+    }
+
+    // ==========================================
+    // 2. Bernstein Basis Tests
+    // ==========================================
+
+    #[test]
+    fn test_bernstein_extremes() {
+        let degree = 3;
+        let dummy_points = Array2::zeros((4, 3));
+        let curve = BezierCurve::new(degree, dummy_points).unwrap();
+
+        // At t=0, only the first polynomial (v=0) is 1.0
+        assert_eq!(curve.bernstein(0, &array![0.0]), array![1.0]);
+        assert_eq!(curve.bernstein(1, &array![0.0]), array![0.0]);
+
+        // At t=1, only the last polynomial (v=degree) is 1.0
+        assert_eq!(curve.bernstein(degree, &array![1.0]), array![1.0]);
+        assert_eq!(curve.bernstein(0, &array![1.0]), array![0.0]);
+    }
+
+    #[test]
+    fn test_bernstein_partition_of_unity() {
+        let degree = 3;
+        let dummy_points = Array2::zeros((4, 3));
+        let curve = BezierCurve::new(degree, dummy_points).unwrap();
+
+        let t_vals = Array1::linspace(0.0, 1.0, 10);
+        let mut totals = vec![0.0; 10];
+
+        for v in 0..=degree {
+            let results = curve.bernstein(v, &t_vals);
+            for (i, &res) in results.iter().enumerate() {
+                totals[i] += res;
+            }
+        }
+
+        // Sum of all basis polynomials for any t must be exactly 1.0
+        for total in totals {
+            assert!((total - 1.0).abs() < 1e-10);
+        }
+    }
+
+    // ==========================================
+    // 3. Evaluation Tests
+    // ==========================================
+
+    #[test]
+    fn test_bezier_evaluate_simple() {
+        let degree = 2;
+        let control_points = array![[0.0, 0.0, 0.0], [1.0, 2.0, 0.0], [2.0, 0.0, 0.0]];
+        let curve = BezierCurve::new(degree, control_points).unwrap();
+
+        // Evaluate with 3 samples: t=0.0, t=0.5, t=1.0
+        let points = curve.evaluate(3);
+
+        assert_eq!(
+            points.nrows(),
+            3,
+            "Matrix should always have 3 rows for X, Y, Z"
+        );
+        assert_eq!(
+            points.ncols(),
+            3,
+            "Matrix should have columns equal to requested sample count"
         );
 
-        let error_msg = result.unwrap_err();
+        // At t=0.0, point should be p0
+        assert!((points[[0, 0]] - 0.0).abs() < 1e-6);
+        assert!((points[[1, 0]] - 0.0).abs() < 1e-6);
+
+        // At t=0.5, point should be 0.25*p0 + 0.5*p1 + 0.25*p2 = (1.0, 1.0, 0.0)
+        assert!((points[[0, 1]] - 1.0).abs() < 1e-6);
+        assert!((points[[1, 1]] - 1.0).abs() < 1e-6);
+
+        // At t=1.0, point should be p2
+        assert!((points[[0, 2]] - 2.0).abs() < 1e-6);
+        assert!((points[[1, 2]] - 0.0).abs() < 1e-6);
+    }
+
+    // ==========================================
+    // 4. Rational Basis Tests
+    // ==========================================
+
+    #[test]
+    fn test_rational_basis_division_by_zero() {
+        let degree = 2;
+        let control_points = Array2::zeros((3, 3));
+        // All weights set to 0.0 to trigger division by zero
+        let weights = Array1::zeros(3);
+
+        let curve = BezierCurve::new_with_weights(degree, control_points, weights).unwrap();
+
+        let result = curve.rational_basis(10);
         assert!(
-            error_msg.contains("segment_index"),
-            "The error message does not contain 'segment_index'"
+            result.is_err(),
+            "Should return an error when denominator is zero"
         );
-        assert!(
-            error_msg.contains("is out of bound for knots of length"),
-            "The error message does not contain the expected text"
-        );
+        assert!(result.unwrap_err().contains("Division by zero"));
     }
 }

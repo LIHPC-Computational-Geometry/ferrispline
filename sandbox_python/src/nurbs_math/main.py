@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 
 
 from .visualisation import figure
+from .nurbslib_visualisation import n_figure
 from .load_nurbs import default_value, load_nurbs_from_vtk
 
 
@@ -33,7 +34,14 @@ def main():
     else:
         control_points, ctrl_pt_weights, knots, degree = default_value()
 
-    fig = figure(
+    fig_1 = n_figure(
+        degree=degree,
+        knots=knots,
+        control_points=control_points,
+        ctrl_pt_weights=ctrl_pt_weights,
+    )
+
+    fig_2 = figure(
         degree=degree,
         knots=knots,
         control_points=control_points,
