@@ -79,6 +79,10 @@ impl ControlPoint for RationalPoint3 {
     }
 }
 
+// NOTE: In the lib nalgebra (the lib for Point and Vector), Point and Vector are really differente.
+// Point is a specifique location in space and Vector represents a displacement or direction.
+// Because of this mathematical distinction is not possible to add two points together.
+// So with coords we can converte this `h2` point into a vector
 impl Add for RationalPoint3 {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
