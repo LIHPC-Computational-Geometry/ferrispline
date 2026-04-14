@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-nalgebra = "0.34.1"
+nalgebra = "0.34.2"
 ndarray = "0.17.2"
 num-integer = "0.1.46"
