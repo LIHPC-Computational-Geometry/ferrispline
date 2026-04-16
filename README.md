@@ -46,11 +46,10 @@ CI_REGISTRY_IMAGE='registry.gitlab.com/maxime-stauffert/vtk_converter'
 docker build --build-arg USER=${USER} \
              --network=host \
              --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG \
-             --target dev \
-             .devcontainer/
+             --target dev ./
 ```
 
-## Run tests
+## Run CI tests
 
 One can run:
 
@@ -64,6 +63,6 @@ docker run --interactive \
            $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
 cd vtk_converter/
 pre-commit run
-pytest
 cargo test
+./run.sh test
 ```

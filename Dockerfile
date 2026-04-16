@@ -1,4 +1,4 @@
-FROM ubuntu:noble-20260113 AS base
+FROM ubuntu:noble-20260410 AS base
 
 FROM base AS rust
 
@@ -35,6 +35,21 @@ COPY --from=rust --link /root/.cargo/ /root/.cargo/
 COPY --from=rust --link /root/.rustup/ /root/.rustup/
 
 ENV PATH="/root/.cargo/bin:${PATH}"
+
+FROM latest AS build
+
+ADD core_rust/ /opt/core_rust/
+
+ADD nurbslib/ /opt/nurbslib/
+
+WORKDIR /opt/nurbslib/
+
+RUN maturin build --release --out dist && \
+    pip install --break-system-packages dist/*.whl --force-reinstall
+
+FROM base AS bot
+
+COPY --from=build --link /opt/nurbslib/dist/ /opt/nurbslib/dist/
 
 FROM dep AS dev
 
