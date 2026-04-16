@@ -47,9 +47,19 @@ WORKDIR /opt/nurbslib/
 RUN maturin build --release --out dist && \
     pip install --break-system-packages dist/*.whl --force-reinstall
 
+FROM dep AS test
+
+COPY --from=build --link /opt/nurbslib/ /opt/nurbslib/
+
+ADD sandbox_python/ /opt/sandbox_python/
+
+WORKDIR /opt/sandbox_python/
+
+RUN pip install --break-system-packages -e . && nurbs-convert -f /opt/sandbox_python/vtk/curve_test.vtk
+
 FROM base AS bot
 
-COPY --from=build --link /opt/nurbslib/dist/ /opt/nurbslib/dist/
+COPY --from=build --link /opt/nurbslib/ /opt/nurbslib/
 
 FROM dep AS dev
 
