@@ -16,8 +16,8 @@ impl PyBezierCurve {
         points: PyReadonlyArray2<f64>,
         weights: Option<PyReadonlyArray1<f64>>,
     ) -> PyResult<Self> {
-        // NOTE: 'as_array()' crée une vue (aucune copie)
-        // NOTE: 'to_owned() fait une copie en bloc très rapide (optimiser en C)
+        // NOTE: `as_array()` creates a view (no copy is made).
+        // NOTE: `to_owned()` performs a very fast block copy (optimized in C).
         let control_points = points.as_array().to_owned();
 
         let inner = match weights {
