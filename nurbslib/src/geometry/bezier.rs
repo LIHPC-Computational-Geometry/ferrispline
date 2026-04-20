@@ -1,4 +1,4 @@
-use numpy::{IntoPyArray, PyArray1, PyArray2, PyReadonlyArray1, PyReadonlyArray2};
+use numpy::{IntoPyArray, PyArray1, PyArray2, PyReadonlyArray1, PyReadonlyArray2, ToPyArray};
 use pyo3::{exceptions::PyValueError, prelude::*};
 
 use core_rust::geometry::bezier::BezierCurve;
@@ -35,13 +35,15 @@ impl PyBezierCurve {
         self.inner.degree
     }
 
-    // NOTE: struct BezierCurve doesn't impl copy
+    // NOTE: `into_pyarray()` is a conversion function that consumes the variable.
+    // NOTE: `to_pyarray()` creates a new NumPy array by copying the data from a Rust reference.
+    // NOTE: We cannot use `into_pyarray()` here because `self` is borrowed, and dynamically allocated types like `Array1` and `Array2` do not implement the `Copy` trait.
     pub fn get_control_points<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray2<f64>> {
-        self.inner.control_points.clone().into_pyarray(py)
+        self.inner.control_points.to_pyarray(py)
     }
 
     pub fn get_weights<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<f64>> {
-        self.inner.weights.clone().into_pyarray(py)
+        self.inner.weights.to_pyarray(py)
     }
 
     // On définit la signature Python : sample est obligatoire, rational est optionnel (None par défaut)
