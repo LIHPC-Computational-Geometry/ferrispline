@@ -31,8 +31,25 @@ impl PyBezierCurve {
         Ok(Self { inner })
     }
 
-    pub fn degree(&self) -> usize {
+    pub fn get_degree(&self) -> usize {
         self.inner.degree
+    }
+
+    pub fn get_control_points(&self) -> Vec<[f64; 3]> {
+        let num_points = self.inner.control_points.nrows();
+        let mut py_points = Vec::with_capacity(num_points);
+        for i in 0..num_points {
+            py_points.push([
+                self.inner.control_points[[i, 0]],
+                self.inner.control_points[[i, 1]],
+                self.inner.control_points[[i, 2]],
+            ]);
+        }
+        py_points
+    }
+
+    pub fn get_weights(&self) -> Vec<f64> {
+        self.inner.weights.to_vec()
     }
 
     // On définit la signature Python : sample est obligatoire, rational est optionnel (None par défaut)
