@@ -128,9 +128,9 @@ impl BezierCurve {
                 let den = binomial(new_degree, i) as f64;
                 let coef = num / den;
 
-                new_control_points[[i, 0]] += self.control_points[[j, 0]] * coef;
-                new_control_points[[i, 1]] += self.control_points[[j, 1]] * coef;
-                new_control_points[[i, 2]] += self.control_points[[j, 2]] * coef;
+                for k in 0..3 {
+                    new_control_points[[i, k]] += self.control_points[[j, k]] * coef;
+                }
 
                 new_weights[i] += self.weights[j] * coef;
             }
@@ -141,13 +141,17 @@ impl BezierCurve {
     }
 }
 
+// ==========================================
+// SECTION Unit Tests
+// ==========================================
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use ndarray::{Array1, Array2, array};
 
     // ==========================================
-    // 1. Constructor Validation Tests
+    // SECTION 1. Constructor Validation Tests
     // ==========================================
 
     #[test]
@@ -179,7 +183,7 @@ mod tests {
     }
 
     // ==========================================
-    // 2. Bernstein Basis Tests
+    // #SECTION 2. Bernstein Basis Tests
     // ==========================================
 
     #[test]
@@ -220,7 +224,7 @@ mod tests {
     }
 
     // ==========================================
-    // 3. Evaluation Tests
+    // #SECTION 3. Evaluation Tests
     // ==========================================
 
     #[test]
@@ -257,7 +261,7 @@ mod tests {
     }
 
     // ==========================================
-    // 4. Rational Basis Tests
+    // SECTION 4. Rational Basis Tests
     // ==========================================
 
     #[test]
@@ -278,7 +282,7 @@ mod tests {
     }
 
     // ==========================================
-    // 5. Degree Elevation Tests
+    // SECTION 5. Degree Elevation Tests
     // ==========================================
 
     #[test]

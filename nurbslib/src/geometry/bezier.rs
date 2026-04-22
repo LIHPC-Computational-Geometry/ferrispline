@@ -8,6 +8,7 @@ pub struct PyBezierCurve {
     pub inner: BezierCurve,
 }
 
+//
 #[pymethods]
 impl PyBezierCurve {
     #[new]
@@ -46,7 +47,7 @@ impl PyBezierCurve {
         self.inner.weights.to_pyarray(py)
     }
 
-    // On définit la signature Python : sample est obligatoire, rational est optionnel (None par défaut)
+    // NOTE: On définit la signature Python : sample est obligatoire, rational est optionnel (None par défaut)
     #[pyo3(signature = (sample, rational=None))]
     pub fn evaluate<'py>(
         &self,
@@ -66,5 +67,9 @@ impl PyBezierCurve {
         };
 
         Ok(curve_points.into_pyarray(py))
+    }
+
+    pub fn degree_elevation(&mut self, new_degree: usize) {
+        self.inner.degree_elevation(new_degree);
     }
 }
