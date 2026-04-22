@@ -12,4 +12,5 @@ core_rust = { path = "../core_rust"}
 nalgebra = "0.34.2"
 ndarray = "0.17.2"
 num-integer = "0.1.46"
+numpy = "0.28.0"
 pyo3 = "0.28.3"

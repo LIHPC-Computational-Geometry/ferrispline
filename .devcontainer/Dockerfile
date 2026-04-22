@@ -20,6 +20,7 @@ RUN apt update && \
     pip \
     pre-commit \
     python3 \
+    python3-dev   \
     python3-matplotlib \
     python3-pytest \
     python3-scipy && \
