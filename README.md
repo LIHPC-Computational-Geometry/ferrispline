@@ -1,4 +1,4 @@
-# VTK converter
+# FerriSpline
 
 ## Overview
 This repository hosts a high-performance library for generating, manipulating, and computing hexahedral meshes. It leverages a pure **Rust** core for intensive mathematical operations to ensure memory safety and optimal execution speed. It provides a native **Python API** via PyO3, designed for seamless integration into meshing workflows, blocking algorithms, and rendering pipelines (e.g., Panda3D, gmsh).
@@ -40,9 +40,9 @@ maturin develop
 One can run:
 
 ```bash
-cd /path/to/vtk_converter/
+cd /path/to/ferrispline/
 CI_COMMIT_REF_SLUG="$(git rev-parse --abbrev-ref HEAD)"
-CI_REGISTRY_IMAGE='registry.gitlab.com/maxime-stauffert/vtk_converter'
+CI_REGISTRY_IMAGE='registry.gitlab.com/maxime-stauffert/ferrispline'
 docker build --build-arg USER=${USER} \
              --network=host \
              --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG \
@@ -59,9 +59,9 @@ docker run --interactive \
            --network=host \
            --rm \
            --tty \
-           --volume ./:/home/${USER}/vtk_converter/ \
+           --volume ./:/home/${USER}/ferrispline/ \
            $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-cd vtk_converter/
+cd ferrispline/
 pre-commit run
 cargo test
 ./run.sh test

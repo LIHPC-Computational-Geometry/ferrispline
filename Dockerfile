@@ -36,31 +36,6 @@ COPY --from=rust --link /root/.rustup/ /root/.rustup/
 
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-FROM latest AS build
-
-ADD core_rust/ /opt/core_rust/
-
-ADD nurbslib/ /opt/nurbslib/
-
-WORKDIR /opt/nurbslib/
-
-RUN maturin build --release --out dist && \
-    pip install --break-system-packages dist/*.whl --force-reinstall
-
-FROM dep AS test
-
-COPY --from=build --link /opt/nurbslib/ /opt/nurbslib/
-
-ADD sandbox_python/ /opt/sandbox_python/
-
-WORKDIR /opt/sandbox_python/
-
-RUN pip install --break-system-packages -e . && nurbs-convert -f /opt/sandbox_python/vtk/curve_test.vtk
-
-FROM base AS bot
-
-COPY --from=build --link /opt/nurbslib/ /opt/nurbslib/
-
 FROM dep AS dev
 
 RUN apt update && \
