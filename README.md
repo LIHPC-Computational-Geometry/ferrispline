@@ -41,12 +41,12 @@ One can run:
 
 ```bash
 cd /path/to/ferrispline/
-CI_COMMIT_REF_SLUG="$(git rev-parse --abbrev-ref HEAD)"
-CI_REGISTRY_IMAGE='registry.gitlab.com/maxime-stauffert/ferrispline'
+BRANCH_SLUG="$(git rev-parse --abbrev-ref HEAD | sed 's/[^a-zA-Z0-9._-]/-/g')"
+IMAGE_NAME='ghcr.io/<your-username>/ferrispline'
 docker build --build-arg USER=${USER} \
              --network=host \
-             --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG \
-             --target dev ./
+             --tag $IMAGE_NAME:$BRANCH_SLUG \
+             --target latest ./
 ```
 
 ## Run tests
