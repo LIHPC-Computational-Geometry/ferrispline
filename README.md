@@ -49,7 +49,7 @@ docker build --build-arg USER=${USER} \
              --target dev ./
 ```
 
-## Run CI tests
+## Run tests
 
 One can run:
 
