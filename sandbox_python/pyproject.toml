@@ -27,3 +27,11 @@ nurbs-convert = "nurbs_math.main:main"
 pythonpath = [
     "src"
 ]
+
+[dependency-groups]
+dev = [
+    "matplotlib>=3.9.4",
+    "numpy>=2.0.2",
+    "pyvista>=0.46.5",
+    "scipy>=1.13.1",
+]

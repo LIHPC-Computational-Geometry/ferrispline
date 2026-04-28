@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..core_types import MatrixMxN, MatrixNx3, MatrixNxN, VectorN, Vector3
+from ..core_types import MatrixNx3, VectorN, Vector3
 
 
 def eval_nurbs_curve(

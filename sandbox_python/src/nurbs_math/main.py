@@ -1,15 +1,19 @@
 import argparse
 import os
+import sys
+from pathlib import Path
 
 import matplotlib
 
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 
+# Ajout du dossier 'src' au sys.path pour permettre les imports absolus
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from .visualisation import figure
-from .nurbslib_visualisation import n_figure
-from .load_nurbs import default_value, load_nurbs_from_vtk
+from nurbs_math.visualisation import figure
+from nurbs_math.nurbslib_visualisation import n_figure
+from nurbs_math.load_nurbs import default_value, load_nurbs_from_vtk
 
 
 def set_parser():
@@ -34,14 +38,14 @@ def main():
     else:
         control_points, ctrl_pt_weights, knots, degree = default_value()
 
-    fig_1 = n_figure(
+    n_figure(
         degree=degree,
         knots=knots,
         control_points=control_points,
         ctrl_pt_weights=ctrl_pt_weights,
     )
 
-    fig_2 = figure(
+    figure(
         degree=degree,
         knots=knots,
         control_points=control_points,
