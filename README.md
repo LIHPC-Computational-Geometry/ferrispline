@@ -42,11 +42,11 @@ One can run:
 ```bash
 cd /path/to/ferrispline/
 BRANCH_SLUG="$(git rev-parse --abbrev-ref HEAD | sed 's/[^a-zA-Z0-9._-]/-/g')"
-IMAGE_NAME='ghcr.io/<your-username>/ferrispline'
+IMAGE_NAME='ghcr.io/LIHPC-Computational-Geometry/ferrispline'
 docker build --build-arg USER=${USER} \
              --network=host \
              --tag $IMAGE_NAME:$BRANCH_SLUG \
-             --target latest ./
+             --target dev ./
 ```
 
 ## Run tests
