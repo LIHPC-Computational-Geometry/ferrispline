@@ -1,6 +1,3 @@
-import sys
-from enum import IntEnum
-
 import numpy as np
 import pyvista as pv
 

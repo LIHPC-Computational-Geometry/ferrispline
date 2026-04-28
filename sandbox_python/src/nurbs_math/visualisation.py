@@ -4,7 +4,7 @@ import matplotlib as mpl
 
 from .core_types import MatrixNx3, VectorN
 from .geometry.bezier import bezier_curves
-from .geometry.nurbs import eval_nurbs_curve, cox_deboor
+from .geometry.nurbs import eval_nurbs_curve
 
 
 def figure(
@@ -29,7 +29,7 @@ def figure(
             segment[:, 1],
             segment[:, 2],
             color=colors(idx),
-            label=f"Bézier {idx+1}",
+            label=f"Bézier {idx + 1}",
         )
 
     # NURBS

@@ -3,8 +3,6 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 from .core_types import MatrixNx3, VectorN
-from .geometry.bezier import bezier_curves
-from .geometry.nurbs import eval_nurbs_curve, cox_deboor
 
 import nurbslib
 
@@ -39,7 +37,7 @@ def n_figure(
             seg_points[:, 1],
             seg_points[:, 2],
             color=colors(idx),
-            label=f"Bézier {idx+1}",
+            label=f"Bézier {idx + 1}",
         )
 
     # NURBS
