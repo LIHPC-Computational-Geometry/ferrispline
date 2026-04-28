@@ -1,4 +1,4 @@
-FROM ubuntu:noble-20260113 AS base
+FROM ubuntu:noble-20260410 AS base
 
 FROM base AS rust
 
@@ -32,10 +32,11 @@ RUN apt update && \
 FROM dep AS latest
 
 COPY --from=rust --link /root/.cargo/ /root/.cargo/
-
 COPY --from=rust --link /root/.rustup/ /root/.rustup/
 
-ENV PATH="/root/.cargo/bin:${PATH}"
+ENV CARGO_HOME=/root/.cargo
+ENV RUSTUP_HOME=/root/.rustup
+ENV PATH="${CARGO_HOME}/bin:${PATH}"
 
 FROM dep AS dev
 

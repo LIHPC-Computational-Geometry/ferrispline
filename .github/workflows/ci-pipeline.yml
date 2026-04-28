@@ -1,0 +1,76 @@
+# .github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+
+env:
+  REGISTRY: ghcr.io
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      slug: ${{ steps.slug.outputs.value }}
+      image: ghcr.io/${{ steps.repo.outputs.lowercase }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Get lowercase repository name
+        id: repo
+        run: echo "lowercase=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+
+      - name: Slugify branch name
+        id: slug
+        run: echo "value=$(echo '${{ github.ref_name }}' | sed 's/[^a-zA-Z0-9._-]/-/g')" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: latest
+          push: true
+          tags: ghcr.io/${{ steps.repo.outputs.lowercase }}:${{ steps.slug.outputs.value }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  quality_and_tests:
+    name: Quality Checks & Tests
+    runs-on: ubuntu-latest
+    needs: build
+    container:
+      image: ${{ needs.build.outputs.image }}:${{ needs.build.outputs.slug }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fix Git ownership
+        run: git config --global --add safe.directory '*'
+
+      - name: Run all pre-commit hooks
+        run: pre-commit run --all-files
+
+      - name: Run Rust tests
+        run: cargo test
+
+      - name: Run PyTest via script
+        run: ./run.sh test
