@@ -7,3 +7,4 @@ edition = "2024"
 nalgebra = "0.34.2"
 ndarray = "0.17.2"
 num-integer = "0.1.46"
+uuid = { version = "1", features = ["v4"] }
