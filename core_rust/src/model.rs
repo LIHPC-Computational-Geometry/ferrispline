@@ -15,6 +15,7 @@ pub enum CurveKind {
 pub enum ModelError {
     CurveNotFound { curve_id: CurveId },
     MutationFailed { curve_id: CurveId, message: String },
+    MutationsFailed { curves_id: Array1<CurveId>, message: String },
 }
 
 /// A curve owned by the model store.
@@ -40,8 +41,26 @@ impl Curve {
             Curve::Nurbs(c) => c.eval_nurbs_curve(sample),
         }
     }
+
+    pub fn to_bezier(&self) -> Result<Vec<BezierCurve>, String> {
+        match self {
+            Curve::Bezier(_c) => todo!("fix: clone() with '&'"),
+            Curve::Nurbs(c) => c.to_bezier(),
+        }
+    }
+
+    pub fn to_nurbs(&self) -> Result<SplineCurve, String> {
+        match self {
+            Curve::Bezier(_c) => todo!(),
+            Curve::Nurbs(_c) => todo!("fix: clone() with '&'"),
+        }
+    }
 }
 
+/// A wrapper around a curve that tracks its modification state.
+/// The `dirty` flag is set to `true` whenever the curve is modified.
+/// This simply tells the system: "I have changed! My geometry needs to be
+/// recalculated before the next time you draw me."
 #[derive(Debug)]
 struct CurveEntry {
     curve: Curve,
@@ -172,6 +191,25 @@ impl Model {
         Ok(out)
     }
 
+    pub fn with_curves_mut<R>(&mut self, curves_id: &Array1<CurveId>,f: impl FnOnce(Vec<(CurveId, &mut CurveEntry)>) -> Result<R, String>) -> Result<R, ModelError> {
+        let ids_to_fetch: Vec<CurveId> = curves_id.to_vec();
+
+        let entries: Vec<(CurveId, &mut CurveEntry)> = self.curves.iter_mut()
+            .filter(|(id, _)| ids_to_fetch.contains(id))
+            .map(|(id, entry)| {
+                entry.dirty = true;
+                (id.clone(), entry)
+            })
+            .collect();
+
+        let out = f(entries).map_err(|message| {
+            ModelError::MutationsFailed {
+                curves_id: curves_id.clone().to_owned(), message,
+             }
+            })?;
+        Ok(out)
+    }
+
     pub fn clear_dirty(&mut self, curve_id: &CurveId) -> Result<(), ModelError> {
         let entry = self
             .curves
@@ -191,6 +229,45 @@ impl Model {
                 curve_id: curve_id.clone(),
             })?
             .curve)
+    }
+
+    pub fn set_degree(&mut self, curve_id: &CurveId, _degree: usize) -> Result<(), ModelError> {
+        self.with_curve_mut(curve_id, |curve| {
+            match curve {
+                Curve::Bezier(_curve) => {
+                    todo!("create a function set_degree with degree elevation and degree reduction")
+                }
+                Curve::Nurbs(_curve) => {
+                    todo!("create a function set_degree with degree elevation and degree reduction")
+                }
+            }
+        })
+    }
+
+    pub fn convert(&mut self, curves_id: &Array1<CurveId>, new_kind: CurveKind) -> Result<(), ModelError> {
+        self.with_curves_mut(curves_id, |_curves| {
+            match new_kind {
+                CurveKind::Bezier => {
+                    todo!("curve.to_bezier()")
+                }
+                CurveKind::Nurbs => {
+                    todo!("curves[0].to_nurbs(cuvres) or curve.to_nurbs()")
+                }
+            }
+        })
+    }
+
+    pub fn move_control_point(&mut self, curve_id: &CurveId, _index: usize, _new_pos: Array1<f64>) -> Result<(), ModelError> {
+        self.with_curve_mut(curve_id, |curve| {
+            match curve {
+                Curve::Bezier(_curve) => {
+                    todo!("curve.move_control_point(index, new_pos)")
+                }
+                Curve::Nurbs(_curve) => {
+                    todo!("curve.move_control_point(index, new_pos)")
+                }
+            }
+        })
     }
 }
 
@@ -220,4 +297,3 @@ mod tests {
         assert!(!model.delete_curve(&id));
     }
 }
-
