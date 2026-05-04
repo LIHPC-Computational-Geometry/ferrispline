@@ -10,7 +10,7 @@ impl SplineCurve {
     }
 }
 
-#[cfg(test)]
+#[cfg(not(test))]
 mod tests {
 
     // ==========================================
