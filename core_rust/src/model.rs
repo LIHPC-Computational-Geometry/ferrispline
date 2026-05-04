@@ -197,7 +197,7 @@ impl Model {
     /// and indicates that the curve has been modified by setting its `dirty` flag to true.
     ///
     /// Example:
-    /// ```
+    /// ```rust,ignore
     /// pub fn move_point_on_curve(&mut self, curve_id: &CurveId, index: usize, new_pos: Array1<f64>) -> Result<(), ModelError> {
     ///     self.with_curve_mut(curve_id, |curve| {
     ///         curve.move_control_point(index, new_pos)
