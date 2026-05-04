@@ -48,7 +48,7 @@ impl Curve {
     pub fn evaluate(&self, sample: usize) -> Result<Array2<f64>, String> {
         match self {
             Curve::Bezier(c) => Ok(c.evaluate(sample)),
-            Curve::Nurbs(c) => c.eval_nurbs_curve(sample),
+            Curve::Nurbs(c) => c.evaluate(sample),
         }
     }
 
@@ -127,22 +127,20 @@ impl Model {
         control_points: Array2<f64>,
         knots: KnotVector,
         weights: Option<Array1<f64>>,
-    ) {
+    ) -> Result<CurveId, String> {
         let curve = match weights {
-            Some(w) => SplineCurve::builder()
-                .degree(degree)
-                .build_nurbs(control_points, w, knots)
-                .unwrap(),
-            None => todo!(),
-        };
+            Some(w) => SplineCurve::new_with_weights(degree, control_points, w, knots),
+            None => SplineCurve::new(degree, control_points, knots),
+        }?;
         let id = CurveId::new();
         self.curves.insert(
-            id,
+            id.clone(),
             CurveEntry {
                 curve: Curve::Nurbs(curve),
                 dirty: true,
             },
         );
+        Ok(id)
     }
 
     /// Deletes a curve from the model by its ID. Returns `true` if the curve was found and removed.
@@ -204,7 +202,6 @@ impl Model {
     ///     })
     /// }
     /// ```
-    // NOTE: `|curve|` corresponds to the `entry` variable in the `with_curve_mut` function.
     pub fn with_curve_mut<R>(
         &mut self,
         curve_id: &CurveId,
