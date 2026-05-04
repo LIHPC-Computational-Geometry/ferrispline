@@ -273,6 +273,9 @@ impl Model {
         })
     }
 
+    // STUB: lors de la conversion, il y aura un changement du nombre de courbe
+    // Il faut prendre en compte qu'il va falloir creer ou suppirmer des CurveId
+
     /// Converts a set of curves to a different curve kind (e.g., Bezier to NURBS).
     pub fn convert(
         &mut self,

@@ -2,8 +2,11 @@ use crate::core::knot::KnotVector;
 use crate::traits::ParametricCurve;
 use ndarray::{Array1, Array2};
 
+mod control_points;
+mod degree;
 mod evaluation;
 mod extraction;
+mod knots;
 
 //
 // Main SplineCurve Struct

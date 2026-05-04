@@ -87,7 +87,7 @@ impl SplineCurve {
         Ok((final_points, extracted_weights))
     }
 
-    /// Converte a NURBS curve to a Bezier curve
+    /// Converte a NURBS curve to Bezier curves
     pub fn to_bezier(&self) -> Result<Vec<BezierCurve>, String> {
         let mut bezier_curves: Vec<BezierCurve> = Vec::new();
         for i in self.degree..self.control_points.nrows() {
