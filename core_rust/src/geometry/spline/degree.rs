@@ -1,22 +1,23 @@
 use crate::geometry::spline::SplineCurve;
 
 impl SplineCurve {
-    pub fn set_degree(&mut self, new_degree: usize) {
+    pub fn set_degree(&self, new_degree: usize) -> Result<(), String> {
         if new_degree > self.degree {
-            self.degree_elevation(new_degree);
+            self.degree_elevation(new_degree)
         } else if new_degree < self.degree {
-            self.degree_reduction(new_degree);
+            self.degree_reduction(new_degree)
         } else {
             // Do nothing
+            Ok(())
         }
     }
 
-    fn degree_elevation(&mut self, _new_degree: usize) {
-        todo!("degree_elevation")
+    fn degree_elevation(&self, _new_degree: usize) -> Result<(), String> {
+        todo!("degree_elevation");
     }
 
-    fn degree_reduction(&mut self, _new_degree: usize) {
-        todo!("degree_reduction")
+    fn degree_reduction(&self, _new_degree: usize) -> Result<(), String> {
+        todo!("degree_reduction");
     }
 }
 

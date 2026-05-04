@@ -262,14 +262,12 @@ impl Model {
     }
 
     /// Sets a new degree for a specified curve, adjusting its internal representation (elevation or reduction).
-    pub fn set_degree(&mut self, curve_id: &CurveId, _degree: usize) -> Result<(), ModelError> {
+    pub fn set_degree(&mut self, curve_id: &CurveId, degree: usize) -> Result<(), ModelError> {
         self.with_curve_mut(curve_id, |curve| match curve {
             Curve::Bezier(_curve) => {
                 todo!("create a function set_degree with degree elevation and degree reduction")
             }
-            Curve::Nurbs(_curve) => {
-                todo!("create a function set_degree with degree elevation and degree reduction")
-            }
+            Curve::Nurbs(c) => c.set_degree(degree),
         })
     }
 
@@ -296,16 +294,14 @@ impl Model {
     pub fn move_control_point(
         &mut self,
         curve_id: &CurveId,
-        _index: usize,
-        _new_pos: Array1<f64>,
+        index: usize,
+        new_pos: Array1<f64>,
     ) -> Result<(), ModelError> {
         self.with_curve_mut(curve_id, |curve| match curve {
-            Curve::Bezier(_curve) => {
+            Curve::Bezier(_c) => {
                 todo!("curve.move_control_point(index, new_pos)")
             }
-            Curve::Nurbs(_curve) => {
-                todo!("curve.move_control_point(index, new_pos)")
-            }
+            Curve::Nurbs(c) => c.move_control_point(index, new_pos),
         })
     }
 
@@ -313,16 +309,14 @@ impl Model {
     pub fn set_control_point_weight(
         &mut self,
         curve_id: &CurveId,
-        _index: usize,
-        _weight: f64,
+        index: usize,
+        weight: f64,
     ) -> Result<(), ModelError> {
         self.with_curve_mut(curve_id, |curve| match curve {
             Curve::Bezier(_curve) => {
                 todo!("curve.set_control_point_weight(index, weight)")
             }
-            Curve::Nurbs(_curve) => {
-                todo!("curve.set_control_point_weight(index, weight)")
-            }
+            Curve::Nurbs(c) => c.set_control_point_weight(index, weight),
         })
     }
 
@@ -330,28 +324,24 @@ impl Model {
     pub fn insert_knot(
         &mut self,
         curve_id: &CurveId,
-        _index: usize,
-        _knot: f64,
+        index: usize,
+        knot: f64,
     ) -> Result<(), ModelError> {
         self.with_curve_mut(curve_id, |curve| match curve {
             Curve::Bezier(_curve) => {
                 todo!("curve.insert_knot(index, knot)")
             }
-            Curve::Nurbs(_curve) => {
-                todo!("curve.insert_knot(index, knot)")
-            }
+            Curve::Nurbs(c) => c.insert_knot(index, knot),
         })
     }
 
     /// Removes a knot from the knot vector of a curve if possible, possibly modifying its exact geometric shape.
-    pub fn remove_knot(&mut self, curve_id: &CurveId, _index: usize) -> Result<(), ModelError> {
+    pub fn remove_knot(&mut self, curve_id: &CurveId, index: usize) -> Result<(), ModelError> {
         self.with_curve_mut(curve_id, |curve| match curve {
             Curve::Bezier(_curve) => {
                 todo!("curve.remove_knot(index)")
             }
-            Curve::Nurbs(_curve) => {
-                todo!("curve.remove_knot(index)")
-            }
+            Curve::Nurbs(c) => c.remove_knot(index),
         })
     }
 }

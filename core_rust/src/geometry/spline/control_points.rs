@@ -4,12 +4,12 @@ use crate::geometry::spline::SplineCurve;
 
 impl SplineCurve {
     /// Moves a specific control point of a curve to a new position.
-    pub fn move_control_point(&mut self, _index: usize, _new_pos: Array1<f64>) {
+    pub fn move_control_point(&mut self, _index: usize, _new_pos: Array1<f64>) -> Result<(), String> {
         todo!("move_control_point")
     }
 
     /// Sets the weight of a specific control point of a curve.
-    pub fn set_control_point_weight(&mut self, _index: usize, _weight: f64) {
+    pub fn set_control_point_weight(&mut self, _index: usize, _weight: f64) -> Result<(), String> {
         todo!("set_control_point_weight")
     }
 }

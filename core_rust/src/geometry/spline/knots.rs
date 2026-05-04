@@ -1,11 +1,11 @@
 use crate::geometry::spline::SplineCurve;
 
 impl SplineCurve {
-    pub fn insert_knot(&mut self, _index: usize, _knot: f64) {
+    pub fn insert_knot(&mut self, _index: usize, _knot: f64) -> Result<(), String> {
         todo!("insert_knot")
     }
 
-    pub fn remove_knot(&mut self, _index: usize) {
+    pub fn remove_knot(&mut self, _index: usize) -> Result<(), String> {
         todo!("remove_knot")
     }
 }
