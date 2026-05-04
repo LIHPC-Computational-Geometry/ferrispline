@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use ndarray::{Array1, Array2};
 
+use crate::core::knot::KnotVector;
 use crate::geometry::{bezier::BezierCurve, spline::SplineCurve};
 use crate::ids::CurveId;
 
@@ -13,9 +14,17 @@ pub enum CurveKind {
 
 #[derive(Debug)]
 pub enum ModelError {
-    CurveNotFound { curve_id: CurveId },
-    MutationFailed { curve_id: CurveId, message: String },
-    MutationsFailed { curves_id: Array1<CurveId>, message: String },
+    CurveNotFound {
+        curve_id: CurveId,
+    },
+    MutationFailed {
+        curve_id: CurveId,
+        message: String,
+    },
+    MutationsFailed {
+        curves_id: Array1<CurveId>,
+        message: String,
+    },
 }
 
 /// A curve owned by the model store.
@@ -26,7 +35,7 @@ pub enum Curve {
 }
 
 impl Curve {
-    /// Return the curve's kind.
+    /// Returns the curve's kind (Bezier or Nurbs).
     pub fn kind(&self) -> CurveKind {
         match self {
             Curve::Bezier(_) => CurveKind::Bezier,
@@ -34,6 +43,7 @@ impl Curve {
         }
     }
 
+    /// Evaluates the curve at a given number of sample points.
     /// Pure evaluation. Output shape is currently delegated to underlying implementations.
     pub fn evaluate(&self, sample: usize) -> Result<Array2<f64>, String> {
         match self {
@@ -42,6 +52,7 @@ impl Curve {
         }
     }
 
+    /// Converts the curve to a vector of Bezier curves.
     pub fn to_bezier(&self) -> Result<Vec<BezierCurve>, String> {
         match self {
             Curve::Bezier(_c) => todo!("fix: clone() with '&'"),
@@ -49,6 +60,7 @@ impl Curve {
         }
     }
 
+    /// Converts the curve to a NURBS spline curve.
     pub fn to_nurbs(&self) -> Result<SplineCurve, String> {
         match self {
             Curve::Bezier(_c) => todo!(),
@@ -74,6 +86,7 @@ pub struct Model {
 }
 
 impl Model {
+    /// Creates a new empty model.
     pub fn new() -> Self {
         Self {
             curves: HashMap::new(),
@@ -84,26 +97,18 @@ impl Model {
     // Creation / deletion
     // -----------------------------
 
-    pub fn create_bezier(&mut self, degree: usize, control_points: Array2<f64>) -> Result<CurveId, String> {
-        let curve = BezierCurve::new(degree, control_points)?;
-        let id = CurveId::new();
-        self.curves.insert(
-            id.clone(),
-            CurveEntry {
-                curve: Curve::Bezier(curve),
-                dirty: true,
-            },
-        );
-        Ok(id)
-    }
-
-    pub fn create_bezier_with_weights(
+    /// Creates a new Bezier curve in the model and returns its unique ID.
+    pub fn create_bezier(
         &mut self,
         degree: usize,
         control_points: Array2<f64>,
-        weights: Array1<f64>,
+        weights: Option<Array1<f64>>,
     ) -> Result<CurveId, String> {
-        let curve = BezierCurve::new_with_weights(degree, control_points, weights)?;
+        let curve = match weights {
+            Some(w) => BezierCurve::new_with_weights(degree, control_points, w),
+            None => BezierCurve::new(degree, control_points),
+        }?;
+
         let id = CurveId::new();
         self.curves.insert(
             id.clone(),
@@ -115,7 +120,22 @@ impl Model {
         Ok(id)
     }
 
-    pub fn insert_nurbs(&mut self, id: CurveId, curve: SplineCurve) {
+    /// Creates a new NURBS curve in the model and assigns it a unique ID.
+    pub fn create_nurbs(
+        &mut self,
+        degree: usize,
+        control_points: Array2<f64>,
+        knots: KnotVector,
+        weights: Option<Array1<f64>>,
+    ) {
+        let curve = match weights {
+            Some(w) => SplineCurve::builder()
+                .degree(degree)
+                .build_nurbs(control_points, w, knots)
+                .unwrap(),
+            None => todo!(),
+        };
+        let id = CurveId::new();
         self.curves.insert(
             id,
             CurveEntry {
@@ -125,6 +145,7 @@ impl Model {
         );
     }
 
+    /// Deletes a curve from the model by its ID. Returns `true` if the curve was found and removed.
     pub fn delete_curve(&mut self, curve_id: &CurveId) -> bool {
         self.curves.remove(curve_id).is_some()
     }
@@ -133,16 +154,19 @@ impl Model {
     // Read-only access (pure)
     // -----------------------------
 
+    /// Retrieves the kind of the curve associated with the given ID.
     pub fn curve_kind(&self, curve_id: &CurveId) -> Result<CurveKind, ModelError> {
         Ok(self.get_curve(curve_id)?.kind())
     }
 
+    /// Evaluates the points of the curve associated with the given ID.
     pub fn evaluate(&self, curve_id: &CurveId, sample: usize) -> Result<Array2<f64>, String> {
         self.get_curve(curve_id)
             .map_err(|e| format!("{e:?}"))?
             .evaluate(sample)
     }
 
+    /// Checks if a curve has been modified and requires recalculation (is dirty).
     pub fn is_dirty(&self, curve_id: &CurveId) -> Result<bool, ModelError> {
         Ok(self
             .curves
@@ -153,24 +177,34 @@ impl Model {
             .dirty)
     }
 
+    /// Internal helper to retrieve an immutable reference to a curve by its ID.
+    fn get_curve(&self, curve_id: &CurveId) -> Result<&Curve, ModelError> {
+        Ok(&self
+            .curves
+            .get(curve_id)
+            .ok_or_else(|| ModelError::CurveNotFound {
+                curve_id: curve_id.clone(),
+            })?
+            .curve)
+    }
+
     // -----------------------------
     // Mutating access (marks dirty)
     // -----------------------------
 
-
-    /// Entry point for modifying a curve.
-    /// This function locates the curve to be modified, calls the 'f' closure, that performs the modification,
-    /// and indicates that the curve has been modified using the 'dirty' variable.
+    /// Entry point for modifying a single curve.
+    /// This function locates the curve to be modified, calls the `f` closure that performs the modification,
+    /// and indicates that the curve has been modified by setting its `dirty` flag to true.
     ///
-    /// Exemple:
+    /// Example:
     /// ```
-    ///  pub fn move_point_on_curve(&mut self, curve_id: &CurveId, index: usize, new_pos: Array1<f64>) -> Result<(), ModelError> {
-    ///    self.with_curve_mut(curve_id, |curve| {
-    ///        curve.move_control_point(index, new_pos)
-    ///    })
+    /// pub fn move_point_on_curve(&mut self, curve_id: &CurveId, index: usize, new_pos: Array1<f64>) -> Result<(), ModelError> {
+    ///     self.with_curve_mut(curve_id, |curve| {
+    ///         curve.move_control_point(index, new_pos)
+    ///     })
     /// }
     /// ```
-    // NOTE: `|curve|` correspond à la variable entry dans la fonction `with_curve_mut`
+    // NOTE: `|curve|` corresponds to the `entry` variable in the `with_curve_mut` function.
     pub fn with_curve_mut<R>(
         &mut self,
         curve_id: &CurveId,
@@ -191,10 +225,19 @@ impl Model {
         Ok(out)
     }
 
-    pub fn with_curves_mut<R>(&mut self, curves_id: &Array1<CurveId>,f: impl FnOnce(Vec<(CurveId, &mut CurveEntry)>) -> Result<R, String>) -> Result<R, ModelError> {
+    /// Entry point for modifying multiple curves simultaneously.
+    /// Locates the specified curves, calls the `f` closure to perform modifications,
+    /// and marks all affected curves as dirty.
+    fn with_curves_mut<R>(
+        &mut self,
+        curves_id: &Array1<CurveId>,
+        f: impl FnOnce(Vec<(CurveId, &mut CurveEntry)>) -> Result<R, String>,
+    ) -> Result<R, ModelError> {
         let ids_to_fetch: Vec<CurveId> = curves_id.to_vec();
 
-        let entries: Vec<(CurveId, &mut CurveEntry)> = self.curves.iter_mut()
+        let entries: Vec<(CurveId, &mut CurveEntry)> = self
+            .curves
+            .iter_mut()
             .filter(|(id, _)| ids_to_fetch.contains(id))
             .map(|(id, entry)| {
                 entry.dirty = true;
@@ -202,14 +245,14 @@ impl Model {
             })
             .collect();
 
-        let out = f(entries).map_err(|message| {
-            ModelError::MutationsFailed {
-                curves_id: curves_id.clone().to_owned(), message,
-             }
-            })?;
+        let out = f(entries).map_err(|message| ModelError::MutationsFailed {
+            curves_id: curves_id.clone().to_owned(),
+            message,
+        })?;
         Ok(out)
     }
 
+    /// Clears the dirty flag of a specific curve, indicating its visual representation is up-to-date.
     pub fn clear_dirty(&mut self, curve_id: &CurveId) -> Result<(), ModelError> {
         let entry = self
             .curves
@@ -221,51 +264,93 @@ impl Model {
         Ok(())
     }
 
-    fn get_curve(&self, curve_id: &CurveId) -> Result<&Curve, ModelError> {
-        Ok(&self
-            .curves
-            .get(curve_id)
-            .ok_or_else(|| ModelError::CurveNotFound {
-                curve_id: curve_id.clone(),
-            })?
-            .curve)
-    }
-
+    /// Sets a new degree for a specified curve, adjusting its internal representation (elevation or reduction).
     pub fn set_degree(&mut self, curve_id: &CurveId, _degree: usize) -> Result<(), ModelError> {
-        self.with_curve_mut(curve_id, |curve| {
-            match curve {
-                Curve::Bezier(_curve) => {
-                    todo!("create a function set_degree with degree elevation and degree reduction")
-                }
-                Curve::Nurbs(_curve) => {
-                    todo!("create a function set_degree with degree elevation and degree reduction")
-                }
+        self.with_curve_mut(curve_id, |curve| match curve {
+            Curve::Bezier(_curve) => {
+                todo!("create a function set_degree with degree elevation and degree reduction")
+            }
+            Curve::Nurbs(_curve) => {
+                todo!("create a function set_degree with degree elevation and degree reduction")
             }
         })
     }
 
-    pub fn convert(&mut self, curves_id: &Array1<CurveId>, new_kind: CurveKind) -> Result<(), ModelError> {
-        self.with_curves_mut(curves_id, |_curves| {
-            match new_kind {
-                CurveKind::Bezier => {
-                    todo!("curve.to_bezier()")
-                }
-                CurveKind::Nurbs => {
-                    todo!("curves[0].to_nurbs(cuvres) or curve.to_nurbs()")
-                }
+    /// Converts a set of curves to a different curve kind (e.g., Bezier to NURBS).
+    pub fn convert(
+        &mut self,
+        curves_id: &Array1<CurveId>,
+        new_kind: CurveKind,
+    ) -> Result<(), ModelError> {
+        self.with_curves_mut(curves_id, |_curves| match new_kind {
+            CurveKind::Bezier => {
+                todo!("curve.to_bezier()")
+            }
+            CurveKind::Nurbs => {
+                todo!("curves[0].to_nurbs(cuvres) or curve.to_nurbs()")
             }
         })
     }
 
-    pub fn move_control_point(&mut self, curve_id: &CurveId, _index: usize, _new_pos: Array1<f64>) -> Result<(), ModelError> {
-        self.with_curve_mut(curve_id, |curve| {
-            match curve {
-                Curve::Bezier(_curve) => {
-                    todo!("curve.move_control_point(index, new_pos)")
-                }
-                Curve::Nurbs(_curve) => {
-                    todo!("curve.move_control_point(index, new_pos)")
-                }
+    /// Moves a specific control point of a curve to a new position.
+    pub fn move_control_point(
+        &mut self,
+        curve_id: &CurveId,
+        _index: usize,
+        _new_pos: Array1<f64>,
+    ) -> Result<(), ModelError> {
+        self.with_curve_mut(curve_id, |curve| match curve {
+            Curve::Bezier(_curve) => {
+                todo!("curve.move_control_point(index, new_pos)")
+            }
+            Curve::Nurbs(_curve) => {
+                todo!("curve.move_control_point(index, new_pos)")
+            }
+        })
+    }
+
+    /// Modifies the weight of a specific control point for a rational curve.
+    pub fn set_control_point_weight(
+        &mut self,
+        curve_id: &CurveId,
+        _index: usize,
+        _weight: f64,
+    ) -> Result<(), ModelError> {
+        self.with_curve_mut(curve_id, |curve| match curve {
+            Curve::Bezier(_curve) => {
+                todo!("curve.set_control_point_weight(index, weight)")
+            }
+            Curve::Nurbs(_curve) => {
+                todo!("curve.set_control_point_weight(index, weight)")
+            }
+        })
+    }
+
+    /// Inserts a new knot into the knot vector of a curve without changing its geometric shape.
+    pub fn insert_knot(
+        &mut self,
+        curve_id: &CurveId,
+        _index: usize,
+        _knot: f64,
+    ) -> Result<(), ModelError> {
+        self.with_curve_mut(curve_id, |curve| match curve {
+            Curve::Bezier(_curve) => {
+                todo!("curve.insert_knot(index, knot)")
+            }
+            Curve::Nurbs(_curve) => {
+                todo!("curve.insert_knot(index, knot)")
+            }
+        })
+    }
+
+    /// Removes a knot from the knot vector of a curve if possible, possibly modifying its exact geometric shape.
+    pub fn remove_knot(&mut self, curve_id: &CurveId, _index: usize) -> Result<(), ModelError> {
+        self.with_curve_mut(curve_id, |curve| match curve {
+            Curve::Bezier(_curve) => {
+                todo!("curve.remove_knot(index)")
+            }
+            Curve::Nurbs(_curve) => {
+                todo!("curve.remove_knot(index)")
             }
         })
     }
@@ -280,7 +365,7 @@ mod tests {
     fn can_create_and_evaluate_bezier_through_model() {
         let mut model = Model::new();
         let ctrl = array![[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [2.0, 0.0, 0.0]];
-        let id = model.create_bezier(2, ctrl).unwrap();
+        let id = model.create_bezier(2, ctrl, None).unwrap();
 
         let pts = model.evaluate(&id, 5).unwrap();
         assert_eq!(pts.ncols(), 5);
@@ -292,7 +377,7 @@ mod tests {
     fn delete_curve_returns_true_when_present() {
         let mut model = Model::new();
         let ctrl = Array2::<f64>::zeros((2, 3));
-        let id = model.create_bezier(1, ctrl).unwrap();
+        let id = model.create_bezier(1, ctrl, None).unwrap();
         assert!(model.delete_curve(&id));
         assert!(!model.delete_curve(&id));
     }

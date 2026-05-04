@@ -30,6 +30,12 @@ impl fmt::Display for CurveId {
     }
 }
 
+impl Default for CurveId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Stable string ID for curve control points.
 ///
 /// Format: `curve-<uuid>.cp-<uuid>`
@@ -75,4 +81,3 @@ mod tests {
         assert!(cp.as_str().starts_with(&format!("{}.cp-", curve.as_str())));
     }
 }
-

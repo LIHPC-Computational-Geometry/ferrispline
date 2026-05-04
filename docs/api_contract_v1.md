@@ -228,4 +228,3 @@ Missing for v1 contract:
 - End-to-end **string IDs** (curve + components).
 - Standard **baked geometry** payload (vertices/edges/bounds + CP handles).
 - Command-pattern undo/redo at model/store level.
-
