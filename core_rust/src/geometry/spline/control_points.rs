@@ -4,7 +4,11 @@ use crate::geometry::spline::SplineCurve;
 
 impl SplineCurve {
     /// Moves a specific control point of a curve to a new position.
-    pub fn move_control_point(&mut self, _index: usize, _new_pos: Array1<f64>) -> Result<(), String> {
+    pub fn move_control_point(
+        &mut self,
+        _index: usize,
+        _new_pos: Array1<f64>,
+    ) -> Result<(), String> {
         todo!("move_control_point")
     }
 
