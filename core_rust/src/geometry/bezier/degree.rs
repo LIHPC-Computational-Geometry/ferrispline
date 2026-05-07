@@ -11,7 +11,6 @@ impl BezierCurve {
     ///
     /// # Returns
     /// An `Array2<f64>` matrix containing the elevation coefficients.
-    // NOTE: this function should be move outside the struct BezierCurve
     fn degree_elevation_matrix(current_degree: usize, new_degree: usize) -> Array2<f64> {
         let rows = new_degree + 1;
         let cols = current_degree + 1;
@@ -60,44 +59,21 @@ impl BezierCurve {
         todo!("degree_reduction_by_one: not implemented")
     }
 
-    /// reduce the degree of a Bezier curve with the "Least Squares Approximation" Method
+    /// Reduce degree locally by solving `E * Q ≈ P` in least squares sense, where
+    /// `E` is the degree elevation matrix from `target_degree` to `self.degree`.
     ///
-    /// # Arguments
-    /// * `new_degree` - The desired degree after reduction.
-    /// * `tolerance` - The maximal error authorized
-    ///  * `split` - If the tolerance has been exceeded, for true: split the original curve in two before the reduction, for false: return an error
-    fn degree_reduction(
-        &mut self,
-        new_degree: usize,
-        _tolerance: f64,
-        _split: bool,
-    ) -> Result<Vec<BezierCurve>, String> {
-        if new_degree >= self.degree {
-            return Err(format!(
-                "degree_reduction: new degree must be less than current degree. {} >= {}",
-                new_degree, self.degree
-            ));
-        }
-
-        let elevation_mat = BezierCurve::degree_elevation_matrix(new_degree, self.degree);
-        self.control_points =
-            elevation_mat.t().dot(&self.control_points) / elevation_mat.t().dot(&elevation_mat); // NOTE: new_control_point = A.t() * P / A.t() * A
-        // self.weights = elevation_mat.t().dot(&self.weights) / elevation_mat.t().dot(&elevation_mat);
-        // FIXME: How calculate new_weights ?
-        self.degree = new_degree;
-
-        Ok(vec![])
+    /// For rational curves, the system is solved on homogeneous coordinates.
+    pub fn _reduce_local_least_squares(&self, _target_degree: usize) -> Result<BezierCurve, String> {
+        todo!("reduce_local_least_squares: not implemented")
     }
 
-    pub fn set_degree(&mut self, degree: usize, tolerance: Option<f64>) -> Result<(), String> {
+    pub fn set_degree(&mut self, degree: usize, _tolerance: Option<f64>) -> Result<(), String> {
         if degree > self.degree {
             self.degree_elevation(degree)
         } else if degree < self.degree {
-            let t = tolerance.unwrap_or(1e-9);
-            let _vec = self.degree_reduction(degree, t, true)?;
-            todo!()
+            todo!("reduce_local_least_squares: not implemented")
         } else {
-            todo!()
+            Ok(())
         }
     }
 }
