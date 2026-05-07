@@ -63,7 +63,10 @@ impl BezierCurve {
     /// `E` is the degree elevation matrix from `target_degree` to `self.degree`.
     ///
     /// For rational curves, the system is solved on homogeneous coordinates.
-    pub fn _reduce_local_least_squares(&self, _target_degree: usize) -> Result<BezierCurve, String> {
+    pub fn _reduce_local_least_squares(
+        &self,
+        _target_degree: usize,
+    ) -> Result<BezierCurve, String> {
         todo!("reduce_local_least_squares: not implemented")
     }
 

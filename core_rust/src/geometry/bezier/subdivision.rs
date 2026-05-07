@@ -20,7 +20,8 @@ impl BezierCurve {
         }
 
         // Homogeneous control points: [x*w, y*w, z*w, w]
-        let mut level: Array2<f64> = BezierCurve::homogeneous(&self.control_points, &self.weights, n);
+        let mut level: Array2<f64> =
+            BezierCurve::homogeneous(&self.control_points, &self.weights, n);
 
         let mut left: Array2<f64> = Array2::zeros((n + 1, 4));
         let mut right: Array2<f64> = Array2::zeros((n + 1, 4));
@@ -88,24 +89,24 @@ impl BezierCurve {
         level
     }
 
-
     fn dehomogenize(h: &Array2<f64>) -> Result<(Array2<f64>, Array1<f64>), String> {
-            let n = h.nrows();
-            let mut pts: Array2<f64> = Array2::zeros((n, 3));
-            let mut w: Array1<f64> = Array1::zeros(n);
-            for i in 0..n {
-                let wi = h[[i, 3]];
-                if wi.abs() < 1e-12 {
-                    return Err("subdivide: zero weight encountered during dehomogenization"
-                        .to_string());
-                }
-                w[i] = wi;
-                pts[[i, 0]] = h[[i, 0]] / wi;
-                pts[[i, 1]] = h[[i, 1]] / wi;
-                pts[[i, 2]] = h[[i, 2]] / wi;
+        let n = h.nrows();
+        let mut pts: Array2<f64> = Array2::zeros((n, 3));
+        let mut w: Array1<f64> = Array1::zeros(n);
+        for i in 0..n {
+            let wi = h[[i, 3]];
+            if wi.abs() < 1e-12 {
+                return Err(
+                    "subdivide: zero weight encountered during dehomogenization".to_string()
+                );
             }
-            Ok((pts, w))
+            w[i] = wi;
+            pts[[i, 0]] = h[[i, 0]] / wi;
+            pts[[i, 1]] = h[[i, 1]] / wi;
+            pts[[i, 2]] = h[[i, 2]] / wi;
         }
+        Ok((pts, w))
+    }
 }
 
 #[cfg(test)]
