@@ -1,52 +1,104 @@
 use super::BezierCurve;
 use nalgebra::min;
-use ndarray::{Array1, Array2};
+use ndarray::Array2;
 use num_integer::binomial;
 
 impl BezierCurve {
-    /// Increasing the degree of a Bezier curve without changing its shape
-    pub fn degree_elevation(&mut self, new_degree: usize) {
-        if new_degree <= self.degree {
-            return;
-        }
+    /// Calculates and returns the degree elevation matrix for a Bezier curve.
+    ///
+    /// # Arguments
+    /// * `new_degree` - The desired degree after elevation.
+    ///
+    /// # Returns
+    /// An `Array2<f64>` matrix containing the elevation coefficients.
+    // NOTE: this function should be move outside the struct BezierCurve
+    fn degree_elevation_matrix(current_degree: usize, new_degree: usize) -> Array2<f64> {
+        let rows = new_degree + 1;
+        let cols = current_degree + 1;
+        let mut mat = Array2::zeros((rows, cols));
 
-        let t = new_degree - self.degree;
+        let t = new_degree - current_degree;
 
-        let mut new_control_points: Array2<f64> = Array2::zeros((new_degree + 1, 3));
-        let mut new_weights: Array1<f64> = Array1::zeros(new_degree + 1);
-
-        for i in 0..=new_degree {
+        for i in 0..rows {
             let start = i.saturating_sub(t);
-            let end = min(self.degree, i);
+            let end = min(current_degree, i);
 
             for j in start..=end {
-                let num = (binomial(self.degree, j) * binomial(t, i - j)) as f64;
+                let num = (binomial(current_degree, j) * binomial(t, i - j)) as f64;
                 let den = binomial(new_degree, i) as f64;
-                let coef = num / den;
 
-                for k in 0..3 {
-                    new_control_points[[i, k]] += self.control_points[[j, k]] * coef;
-                }
-
-                new_weights[i] += self.weights[j] * coef;
+                mat[[i, j]] = num / den;
             }
         }
-        self.degree = new_degree;
-        self.control_points = new_control_points;
-        self.weights = new_weights;
+
+        mat
     }
 
-    fn degree_reduction(&mut self, _new_degree: usize) {
-        todo!("create a function degree_reduction")
-    }
-
-    pub fn set_degree(&mut self, degree: usize) -> Result<(), String> {
-        if degree > self.degree {
-            self.degree_elevation(degree);
-        } else if degree < self.degree {
-            self.degree_reduction(degree);
+    /// Elevates the degree of the Bezier curve to the specified new degree.
+    pub fn degree_elevation(&mut self, new_degree: usize) -> Result<(), String> {
+        if new_degree <= self.degree {
+            return Err(format!(
+                "degree_elevation: new degree must be greater than current degree. {} <= {}",
+                new_degree, self.degree
+            ));
         }
+
+        let elevation_mat: Array2<f64> =
+            BezierCurve::degree_elevation_matrix(self.degree, new_degree);
+        self.control_points = elevation_mat.dot(&self.control_points);
+        self.weights = elevation_mat.dot(&self.weights);
+        self.degree = new_degree;
+
         Ok(())
+    }
+
+    /// reduce the degree of a Bezier curve with the inverse formulas
+    /// Pli = (Qi - i/n * Pi-1) / (1 - i/n)
+    /// Pri = (Qi+1 - (1 - (i+1)/n) * Pi+1) / ((i+1)/n)
+    // NOTE: This function will be not implemented yet because not used in the bot's project
+    fn _degree_reduction_by_one(&mut self, _tolerance: f64) -> Result<Vec<BezierCurve>, String> {
+        todo!("degree_reduction_by_one: not implemented")
+    }
+
+    /// reduce the degree of a Bezier curve with the "Least Squares Approximation" Method
+    ///
+    /// # Arguments
+    /// * `new_degree` - The desired degree after reduction.
+    /// * `tolerance` - The maximal error authorized
+    ///  * `split` - If the tolerance has been exceeded, for true: split the original curve in two before the reduction, for false: return an error
+    fn degree_reduction(
+        &mut self,
+        new_degree: usize,
+        _tolerance: f64,
+        _split: bool,
+    ) -> Result<Vec<BezierCurve>, String> {
+        if new_degree >= self.degree {
+            return Err(format!(
+                "degree_reduction: new degree must be less than current degree. {} >= {}",
+                new_degree, self.degree
+            ));
+        }
+
+        let elevation_mat = BezierCurve::degree_elevation_matrix(new_degree, self.degree);
+        self.control_points =
+            elevation_mat.t().dot(&self.control_points) / elevation_mat.t().dot(&elevation_mat); // NOTE: new_control_point = A.t() * P / A.t() * A
+        // self.weights = elevation_mat.t().dot(&self.weights) / elevation_mat.t().dot(&elevation_mat);
+        // FIXME: How calculate new_weights ?
+        self.degree = new_degree;
+
+        Ok(vec![])
+    }
+
+    pub fn set_degree(&mut self, degree: usize, tolerance: Option<f64>) -> Result<(), String> {
+        if degree > self.degree {
+            self.degree_elevation(degree)
+        } else if degree < self.degree {
+            let t = tolerance.unwrap_or(1e-9);
+            let _vec = self.degree_reduction(degree, t, true)?;
+            todo!()
+        } else {
+            todo!()
+        }
     }
 }
 
@@ -66,7 +118,7 @@ mod tests {
         let mut curve = BezierCurve::new(degree, control_points).unwrap();
 
         // Élévation de n (2) à n+1 (3)
-        curve.degree_elevation(3);
+        let _ = curve.degree_elevation(3);
 
         assert_eq!(
             curve.degree, 3,
@@ -84,7 +136,7 @@ mod tests {
         let degree = 2;
         let control_points = array![[0.0, 0.0, 0.0], [1.0, 2.0, 0.0], [2.0, 0.0, 0.0]];
         let mut curve = BezierCurve::new(degree, control_points.clone()).unwrap();
-        curve.degree_elevation(3);
+        let _ = curve.degree_elevation(3);
 
         // Vérification du premier point (P_0 == Q_0)
         assert!((curve.control_points[[0, 0]] - control_points[[0, 0]]).abs() < 1e-9);
@@ -119,7 +171,7 @@ mod tests {
         // Utilisation de la méthode evaluate existante qui retourne une matrice (3, samples)
         let original_eval: Array2<f64> = curve.evaluate(samples);
 
-        curve.degree_elevation(3);
+        let _ = curve.degree_elevation(3);
         let elevated_eval = curve.evaluate(samples);
 
         // Comparaison coordonnée par coordonnée (X, Y, Z) pour chaque échantillon
@@ -157,7 +209,7 @@ mod tests {
 
         // Élévation directe de 3 à 6 (saut de 3 degrés)
         let target_degree = 6;
-        curve.degree_elevation(target_degree);
+        let _ = curve.degree_elevation(target_degree);
 
         // 1. Vérification de la structure dimensionnelle
         assert_eq!(

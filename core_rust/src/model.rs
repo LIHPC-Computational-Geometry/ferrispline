@@ -272,7 +272,7 @@ impl Model {
     /// Sets a new degree for a specified curve, adjusting its internal representation (elevation or reduction).
     pub fn set_degree(&mut self, curve_id: &CurveId, degree: usize) -> Result<(), ModelError> {
         self.with_curve_mut(curve_id, |curve| match curve {
-            Curve::Bezier(c) => c.set_degree(degree),
+            Curve::Bezier(c) => c.set_degree(degree, None),
             Curve::Nurbs(c) => c.set_degree(degree),
         })
     }

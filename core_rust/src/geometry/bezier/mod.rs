@@ -4,6 +4,7 @@ mod control_points;
 mod conversion;
 mod degree;
 mod evaluation;
+mod subdivision;
 
 #[derive(Debug, Clone)]
 pub struct BezierCurve {
