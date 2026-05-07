@@ -25,9 +25,7 @@ impl PySplineCurve {
         let weights = weight_py.as_array().to_owned();
         let knot_vector = KnotVector::new(knots).map_err(PyValueError::new_err)?;
 
-        let inner = SplineCurve::builder()
-            .degree(degree)
-            .build_nurbs(control_points, weights, knot_vector)
+        let inner = SplineCurve::new_with_weights(degree, control_points, weights, knot_vector)
             .map_err(PyValueError::new_err)?;
 
         Ok(Self { inner })
@@ -38,10 +36,7 @@ impl PySplineCurve {
         py: Python<'py>,
         sample: usize,
     ) -> PyResult<Bound<'py, PyArray2<f64>>> {
-        let curve_points = self
-            .inner
-            .eval_nurbs_curve(sample)
-            .map_err(PyValueError::new_err)?;
+        let curve_points = self.inner.evaluate(sample).map_err(PyValueError::new_err)?;
 
         Ok(curve_points.into_pyarray(py))
     }
