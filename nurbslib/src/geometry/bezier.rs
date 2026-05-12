@@ -70,6 +70,6 @@ impl PyBezierCurve {
     }
 
     pub fn degree_elevation(&mut self, new_degree: usize) {
-        self.inner.degree_elevation(new_degree);
+        let _ = self.inner.degree_elevation(new_degree);
     }
 }
