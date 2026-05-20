@@ -11,7 +11,7 @@ mod knots;
 //
 // Main SplineCurve Struct
 //
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SplineCurve {
     pub degree: usize,
     pub control_points: Array2<f64>,

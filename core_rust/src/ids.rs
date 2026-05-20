@@ -15,10 +15,10 @@ impl CurveId {
 
     pub fn try_from_str(s: &str) -> Result<Self, String> {
         let prefix = "curve-";
-        if let Some(uuid_str) = s.strip_prefix(prefix) {
-            if Uuid::parse_str(uuid_str).is_ok() {
-                return Ok(Self(s.to_string()));
-            }
+        if let Some(uuid_str) = s.strip_prefix(prefix)
+            && Uuid::parse_str(uuid_str).is_ok()
+        {
+            return Ok(Self(s.to_string()));
         }
         Err(format!("Invalid CurveId: {}", s))
     }
@@ -45,7 +45,6 @@ impl Default for CurveId {
         Self::new()
     }
 }
-
 
 /// Stable string ID for curve control points.
 ///
