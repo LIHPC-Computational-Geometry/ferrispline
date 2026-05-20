@@ -6,6 +6,8 @@ use crate::geometry::{bezier::PyBezierCurve, spline::PySplineCurve};
 
 pub mod core;
 pub mod geometry;
+pub mod model;
+
 
 #[pymodule]
 fn nurbslib(m: &Bound<'_, PyModule>) -> PyResult<()> {
