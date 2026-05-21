@@ -41,7 +41,11 @@ build: venv
 	@echo "[BUILD] Compilation et installation terminées avec succès."
 
 # 3. Exécution
-run: build
+re: build
+	@echo "[RUN] Exécution du programme principal..."
+	@$(VENV_PYTHON) $(SANDBOX_DIR)/src/nurbs_math/main.py
+
+run:
 	@echo "[RUN] Exécution du programme principal..."
 	@$(VENV_PYTHON) $(SANDBOX_DIR)/src/nurbs_math/main.py
 

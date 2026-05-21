@@ -17,15 +17,15 @@ impl BezierCurve {
     pub fn evaluate(&self, sample: usize) -> Array2<f64> {
         let t: Array1<f64> = Array1::linspace(0.0, 1.0, sample);
 
-        let mut points: Array2<f64> = Array2::zeros((3, sample));
+        let mut points: Array2<f64> = Array2::zeros((sample, 3));
 
         for i in 0..=self.degree {
             let forces: Array1<f64> = self.bernstein(i, &t);
 
             for dir in 0..3 {
                 let cp = self.control_points[[i, dir]];
-                let mut row = points.row_mut(dir);
-                row += &(&forces * cp);
+                let mut col = points.column_mut(dir);
+                col += &(&forces * cp);
             }
         }
 
@@ -36,8 +36,9 @@ impl BezierCurve {
     pub fn evaluate_rational(&self, sample: usize) -> Result<Array2<f64>, String> {
         let basis: Array2<f64> = self.rational_basis(sample)?;
         let t_basis = basis.t();
+
         let curve_points = t_basis.dot(&self.control_points);
-        Ok(curve_points.t().to_owned())
+        Ok(curve_points)
     }
 
     fn rational_basis(&self, sample: usize) -> Result<Array2<f64>, String> {
@@ -123,25 +124,25 @@ mod tests {
         assert_eq!(
             points.nrows(),
             3,
-            "Matrix should always have 3 rows for X, Y, Z"
+            "Matrix should have rows equal to requested sample count"
         );
         assert_eq!(
             points.ncols(),
             3,
-            "Matrix should have columns equal to requested sample count"
+            "Matrix should always have 3 columns for X, Y, Z"
         );
 
         // At t=0.0, point should be p0
         assert!((points[[0, 0]] - 0.0).abs() < 1e-6);
-        assert!((points[[1, 0]] - 0.0).abs() < 1e-6);
+        assert!((points[[0, 1]] - 0.0).abs() < 1e-6);
 
         // At t=0.5, point should be 0.25*p0 + 0.5*p1 + 0.25*p2 = (1.0, 1.0, 0.0)
-        assert!((points[[0, 1]] - 1.0).abs() < 1e-6);
+        assert!((points[[1, 0]] - 1.0).abs() < 1e-6);
         assert!((points[[1, 1]] - 1.0).abs() < 1e-6);
 
         // At t=1.0, point should be p2
-        assert!((points[[0, 2]] - 2.0).abs() < 1e-6);
-        assert!((points[[1, 2]] - 0.0).abs() < 1e-6);
+        assert!((points[[2, 0]] - 2.0).abs() < 1e-6);
+        assert!((points[[2, 1]] - 0.0).abs() < 1e-6);
     }
 
     // ==========================================

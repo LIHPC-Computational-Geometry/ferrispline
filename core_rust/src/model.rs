@@ -384,8 +384,8 @@ mod tests {
         let id = model.create_bezier(2, ctrl, None).unwrap();
 
         let pts = model.evaluate(&id, 5).unwrap();
-        assert_eq!(pts.ncols(), 5);
-        assert_eq!(pts.nrows(), 3);
+        assert_eq!(5, pts.nrows());
+        assert_eq!(3, pts.ncols());
         assert!(model.is_dirty(&id).unwrap());
     }
 

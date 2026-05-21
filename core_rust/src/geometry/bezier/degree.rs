@@ -1,5 +1,5 @@
 use super::BezierCurve;
-use nalgebra::min;
+use std::cmp::min;
 use ndarray::Array2;
 use num_integer::binomial;
 
@@ -156,8 +156,8 @@ mod tests {
         // Comparaison coordonnée par coordonnée (X, Y, Z) pour chaque échantillon
         for axis in 0..3 {
             for t_step in 0..samples {
-                let p_orig = original_eval[[axis, t_step]];
-                let p_elev = elevated_eval[[axis, t_step]];
+                let p_orig = original_eval[[t_step, axis]];
+                let p_elev = elevated_eval[[t_step, axis]];
                 let diff = (p_orig - p_elev).abs();
 
                 assert!(
@@ -226,12 +226,11 @@ mod tests {
         // 3. Validation de l'invariance totale de la forme
         let elevated_eval = curve.evaluate(samples);
 
-        for axis in 0..3 {
-            for t_step in 0..samples {
-                let p_orig = original_eval[[axis, t_step]];
-                let p_elev = elevated_eval[[axis, t_step]];
+        for t_step in 0..samples {
+            for axis in 0..3 {
+                let p_orig = original_eval[[t_step, axis]];
+                let p_elev = elevated_eval[[t_step, axis]];
                 let diff = (p_orig - p_elev).abs();
-
                 assert!(
                     diff < 1e-9,
                     "Divergence géométrique détectée suite au saut de degré. Axe {}, Echantillon {}. Différence: {}",
