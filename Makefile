@@ -45,9 +45,22 @@ re: build
 	@echo "[RUN] Exécution du programme principal..."
 	@$(VENV_PYTHON) $(SANDBOX_DIR)/src/nurbs_math/main.py
 
+
+# Permet de passer le fichier et optionnellement le nombre de samples : make run mon_fichier.vtk 200
+ifeq (run,$(firstword $(MAKECMDGOALS)))
+  FILE_ARG := $(word 2,$(MAKECMDGOALS))
+  SAMPLES_ARG := $(word 3,$(MAKECMDGOALS))
+  $(eval $(FILE_ARG):;@:)
+  $(eval $(SAMPLES_ARG):;@:)
+endif
+
 run:
-	@echo "[RUN] Exécution du programme principal..."
-	@$(VENV_PYTHON) $(SANDBOX_DIR)/src/nurbs_math/main.py
+	@if [ -z "$(FILE_ARG)" ]; then \
+		echo "ERROR: FILE is not set. Usage: make run path/to/file.vtk [samples]"; \
+		exit 1; \
+	fi
+	@echo "[RUN] Exécution avec le fichier : $(FILE_ARG) et samples : $(if $(SAMPLES_ARG),$(SAMPLES_ARG),100)"
+	@$(VENV_PYTHON) $(SANDBOX_DIR)/src/nurbs_math/main.py --file $(FILE_ARG) --samples $(if $(SAMPLES_ARG),$(SAMPLES_ARG),100)
 
 # 4. Nettoyage
 clean:

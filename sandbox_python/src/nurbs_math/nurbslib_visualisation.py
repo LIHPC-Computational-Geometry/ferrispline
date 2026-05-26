@@ -8,8 +8,13 @@ import ferrispline
 
 
 def n_figure(
-    degree: int, knots: list, control_points: MatrixNx3, ctrl_pt_weights: VectorN
+    degree: int,
+    knots: list,
+    control_points: MatrixNx3,
+    ctrl_pt_weights: VectorN,
+    sample: int = 100,
 ):
+    file = open("rust-log.txt", "a")
     model = ferrispline.PyModel()
     try:
         # Use the model to create a NURBS curve, which returns a curve ID.
@@ -21,7 +26,7 @@ def n_figure(
         return
 
     # Evaluate the NURBS curve using its ID.
-    nurbs_curve = np.array(model.evaluate(curve_id, 100))
+    nurbs_curve = np.array(model.evaluate(curve_id, sample))
 
     # Convert the NURBS curve to Bézier segments.
     # NOTE: This assumes the `PyModel` wrapper exposes a `to_bezier` method
@@ -37,7 +42,7 @@ def n_figure(
     evaluated_segments = []
     # Evaluate each Bézier segment by its ID.
     for idx, segment_id in enumerate(bezier_segment_ids):
-        seg_points = np.array(model.evaluate(segment_id, 100))
+        seg_points = np.array(model.evaluate(segment_id, sample))
         evaluated_segments.append(seg_points)
 
         ax.plot(
@@ -87,5 +92,12 @@ def n_figure(
     ax.set_zlabel("Z")
     ax.legend()
     ax.grid(True)
+
+    file.write("Bezier_segments:\n\n " + str(evaluated_segments) + "\n\n\n")
+    file.write("Nurbs_curve:\n\n " + str(nurbs_curve) + "\n\n\n")
+    file.write("Control_points:\n\n " + str(control_points) + "\n\n\n")
+    file.write("Ctrl_pt_weights:\n\n " + str(ctrl_pt_weights) + "\n\n\n")
+    file.write("Degree:\n\n " + str(degree) + "\n\n\n")
+    file.close()
 
     return fig

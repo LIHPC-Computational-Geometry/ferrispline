@@ -1,7 +1,7 @@
 use super::BezierCurve;
-use std::cmp::min;
 use ndarray::Array2;
 use num_integer::binomial;
+use std::cmp::min;
 
 impl BezierCurve {
     /// Calculates and returns the degree elevation matrix for a Bezier curve.

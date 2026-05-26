@@ -21,6 +21,9 @@ def set_parser():
         prog="nurbs2bezier.py", description="A script for convert NURBS to Bezier Curve"
     )
     parser.add_argument("-f", "--file", type=str, help="vtk file with the good format")
+    parser.add_argument(
+        "-s", "--samples", type=int, default=100, help="Sample size for the curve"
+    )
     return parser.parse_args()
 
 
@@ -43,6 +46,7 @@ def main():
         knots=knots,
         control_points=control_points,
         ctrl_pt_weights=ctrl_pt_weights,
+        sample=args.samples,
     )
 
     figure(
@@ -50,6 +54,7 @@ def main():
         knots=knots,
         control_points=control_points,
         ctrl_pt_weights=ctrl_pt_weights,
+        sample=args.samples,
     )
 
     plt.show()

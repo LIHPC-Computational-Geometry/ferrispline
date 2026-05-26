@@ -51,7 +51,7 @@ impl SplineCurve {
             if i < n
                 && u >= self.knots.as_slice()[i]
                 && (u < self.knots.as_slice()[i + 1]
-                    || (u <= self.knots.as_slice()[i + 1] && u == self.knots.as_slice()[n - 1]))
+                    || (u <= self.knots.as_slice()[i + 1] && u == self.knots.as_slice()[n]))
             {
                 return Ok(1.0);
             } else {

@@ -15,6 +15,11 @@ impl BezierCurve {
 
     /// Evaluate Bezier curve for a number of points equal to `sample`
     pub fn evaluate(&self, sample: usize) -> Array2<f64> {
+        if self.weights.iter().any(|&w| w != 1.0)
+            && let Ok(rational_points) = self.evaluate_rational(sample)
+        {
+            return rational_points;
+        }
         let t: Array1<f64> = Array1::linspace(0.0, 1.0, sample);
 
         let mut points: Array2<f64> = Array2::zeros((sample, 3));

@@ -8,13 +8,19 @@ from .geometry.nurbs import eval_nurbs_curve
 
 
 def figure(
-    degree: int, knots: list, control_points: MatrixNx3, ctrl_pt_weights: VectorN
+    degree: int,
+    knots: list,
+    control_points: MatrixNx3,
+    ctrl_pt_weights: VectorN,
+    sample: int = 100,
 ):
+    file = open("py-log.txt", "a")
+
     bezier_segments: list = bezier_curves(
-        knots, control_points, ctrl_pt_weights, degree
+        knots, control_points, ctrl_pt_weights, degree, sample
     )
     nurbs_curve: MatrixNx3 = eval_nurbs_curve(
-        knots, control_points, ctrl_pt_weights, degree
+        knots, control_points, ctrl_pt_weights, degree, sample
     )
 
     # DRAW
@@ -71,5 +77,12 @@ def figure(
     ax.set_zlabel("Z")
     ax.legend()
     ax.grid(True)
+
+    file.write("Bezier_segments:\n\n " + str(bezier_segments) + "\n\n\n")
+    file.write("Nurbs_curve:\n\n " + str(nurbs_curve) + "\n\n\n")
+    file.write("Control_points:\n\n " + str(control_points) + "\n\n\n")
+    file.write("Ctrl_pt_weights:\n\n " + str(ctrl_pt_weights) + "\n\n\n")
+    file.write("Degree:\n\n " + str(degree) + "\n\n\n")
+    file.close()
 
     return fig

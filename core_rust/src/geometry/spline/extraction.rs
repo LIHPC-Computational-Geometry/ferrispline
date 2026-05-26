@@ -1,68 +1,105 @@
 use crate::geometry::bezier::BezierCurve;
 use crate::geometry::spline::SplineCurve;
-use ndarray::{Array1, Array2, Axis, concatenate, s};
+use ndarray::{Array1, Array2, Axis, s};
 
 impl SplineCurve {
     fn compute_knot_insertion_matrix(&self, segment_index: usize) -> Result<Array2<f64>, String> {
+        let p = self.degree;
         let num_knots = self.knots.as_slice().len();
+        let i = segment_index;
 
-        if segment_index >= num_knots.saturating_sub(1) {
+        if i >= num_knots.saturating_sub(1) {
             return Err(format!(
                 "segment_index ({}) is out of bound for knots of length {}",
-                segment_index, num_knots
+                i, num_knots
             ));
         }
 
-        let mut extraction_matrix = Array2::<f64>::eye(1);
+        // Vecteur de nœuds local affectant le segment
+        let start_idx = i.saturating_sub(p);
+        let end_idx = (i + p + 1).min(num_knots - 1);
+        let mut current_knots = self.knots.as_slice()[start_idx..=end_idx].to_vec();
 
-        for degree_step in 1..=self.degree {
-            let start_idx = segment_index.saturating_sub(degree_step);
-            let end_idx = (segment_index + degree_step + 1).min(num_knots);
+        // Matrice identité représentant les p+1 points de contrôle locaux initiaux
+        let mut c = Array2::<f64>::eye(p + 1);
 
-            let local_knots = &self.knots.as_slice()[start_idx..=end_idx];
+        let u_left = self.knots.as_slice()[i];
+        let u_right = self.knots.as_slice()[i + 1];
 
-            let mut tmp_matrix_a = Array2::<f64>::zeros((degree_step, degree_step + 1));
-            let mut tmp_matrix_b = Array2::<f64>::zeros((degree_step, degree_step + 1));
-
-            for row in 0..degree_step {
-                let knot_start = row + 1;
-                let knot_end = knot_start + degree_step;
-
-                // NOTE: May be we want return an error and not 0
-                let distance = if knot_end < local_knots.len() && knot_start < local_knots.len() {
-                    local_knots[knot_end] - local_knots[knot_start]
-                } else {
-                    0.0
-                };
-
-                let (alpha, beta) = if distance != 0.0 {
-                    let alpha_val = (local_knots[degree_step] - local_knots[knot_start]) / distance;
-                    let beta_val =
-                        (local_knots[degree_step + 1] - local_knots[knot_start]) / distance;
-                    (alpha_val, beta_val)
-                } else {
-                    (0.0, 0.0)
-                };
-
-                tmp_matrix_a[[row, row]] = 1.0 - alpha;
-                tmp_matrix_a[[row, row + 1]] = alpha;
-
-                tmp_matrix_b[[row, row]] = 1.0 - beta;
-                tmp_matrix_b[[row, row + 1]] = beta;
+        // Évaluation des multiplicités existantes
+        let mut mult_left = 0;
+        let mut mult_right = 0;
+        for &k_val in &current_knots {
+            if (k_val - u_left).abs() < 1e-9 {
+                mult_left += 1;
             }
-
-            let upper_half = extraction_matrix.dot(&tmp_matrix_a);
-
-            let last_row_idx = extraction_matrix.nrows() - 1;
-            let last_row_matrix = extraction_matrix.slice(s![last_row_idx.., ..]);
-
-            let lower_half = last_row_matrix.dot(&tmp_matrix_b);
-
-            extraction_matrix = concatenate(Axis(0), &[upper_half.view(), lower_half.view()])
-                .map_err(|e| format!("Failed to concatenate matrices: {}", e))?;
+            if (k_val - u_right).abs() < 1e-9 {
+                mult_right += 1;
+            }
         }
 
-        Ok(extraction_matrix)
+        // Algorithme de Boehm pour l'insertion d'un nœud `t`
+        let mut insert_knot = |t: f64| {
+            let mut k = 0;
+            for (idx, &val) in current_knots.iter().enumerate() {
+                if val <= t + 1e-9 {
+                    k = idx;
+                } else {
+                    break;
+                }
+            }
+
+            let num_pts = c.nrows();
+            let mut new_c = Array2::<f64>::zeros((num_pts + 1, p + 1));
+
+            for j in 0..=num_pts {
+                let alpha = if j <= k.saturating_sub(p) {
+                    1.0
+                } else if j > k {
+                    0.0
+                } else {
+                    let num = t - current_knots[j];
+                    let den = current_knots[j + p] - current_knots[j];
+                    if den == 0.0 { 0.0 } else { num / den }
+                };
+
+                for col in 0..=p {
+                    let p_prev = if j == 0 { 0.0 } else { c[[j - 1, col]] };
+                    let p_curr = if j == num_pts { 0.0 } else { c[[j, col]] };
+                    new_c[[j, col]] = alpha * p_curr + (1.0 - alpha) * p_prev;
+                }
+            }
+            current_knots.insert(k + 1, t);
+            c = new_c;
+        };
+
+        // Insertion des extrémités jusqu'à multiplicité `p`
+        for _ in mult_left..p {
+            insert_knot(u_left);
+        }
+        for _ in mult_right..p {
+            insert_knot(u_right);
+        }
+
+        // Le polygone de Bézier correspond aux p+1 points bornés par les nœuds u_right
+        let mut first_right_idx = 0;
+        for (idx, &k_val) in current_knots.iter().enumerate() {
+            if (k_val - u_right).abs() < 1e-9 {
+                first_right_idx = idx;
+                break;
+            }
+        }
+
+        let start_row = first_right_idx.saturating_sub(p + 1);
+        let mut final_c = Array2::<f64>::zeros((p + 1, p + 1));
+
+        for r in 0..=p {
+            for col in 0..=p {
+                final_c[[r, col]] = c[[start_row + r, col]];
+            }
+        }
+
+        Ok(final_c)
     }
 
     fn new_controle_points(
