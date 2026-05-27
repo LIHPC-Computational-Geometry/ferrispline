@@ -12,7 +12,7 @@ mon_projet_maillage/
 ├── core_rust/                 # Pure Rust mathematical core
 │   ├── Cargo.toml
 │   └── src/lib.rs             # NURBS algorithms, mesh generation, geometry
-├── nurbslib/                  # Rust-to-Python bindings (PyO3)
+├── python/                  # Rust-to-Python bindings (PyO3)
 │   ├── Cargo.toml
 │   ├── pyproject.toml         # Maturin build configuration
 │   └── src/lib.rs             # Exposes `core_rust` functions to Python
@@ -31,7 +31,7 @@ mon_projet_maillage/
 To compile the Rust core and install the Python extension directly into your active virtual environment, run:
 
 ```bash
-cd nurbslib
+cd python
 maturin develop
 ```
 
