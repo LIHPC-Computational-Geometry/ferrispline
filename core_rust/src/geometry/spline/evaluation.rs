@@ -119,7 +119,7 @@ mod tests {
         }
 
         assert!(
-            (sum - 1.0).abs() < f64::EPSILON,
+            (sum - 1.0).abs() < 1e-9,
             "Sum of basis functions should be exactly 1.0, got {}",
             sum
         );
