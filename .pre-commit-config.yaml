@@ -1,6 +1,6 @@
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
     -   id: check-added-large-files
     -   id: check-json
@@ -14,14 +14,12 @@ repos:
     -   id: pretty-format-json
         args: [--autofix]
     -   id: trailing-whitespace
--   repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 25.1.0
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.14
     hooks:
-      - id: black
--   repo: https://github.com/asottile/pyupgrade
-    rev: v3.20.0
-    hooks:
-    -   id: pyupgrade
+    -   id: ruff
+        args: [ --fix ]
+    -   id: ruff-format
 -   repo: https://github.com/doublify/pre-commit-rust.git
     rev: v1.0
     hooks:
