@@ -14,7 +14,6 @@ def figure(
     ctrl_pt_weights: VectorN,
     sample: int = 100,
 ):
-    file = open("py-log.txt", "a")
 
     bezier_segments: list = bezier_curves(
         knots, control_points, ctrl_pt_weights, degree, sample
@@ -77,12 +76,5 @@ def figure(
     ax.set_zlabel("Z")
     ax.legend()
     ax.grid(True)
-
-    file.write("Bezier_segments:\n\n " + str(bezier_segments) + "\n\n\n")
-    file.write("Nurbs_curve:\n\n " + str(nurbs_curve) + "\n\n\n")
-    file.write("Control_points:\n\n " + str(control_points) + "\n\n\n")
-    file.write("Ctrl_pt_weights:\n\n " + str(ctrl_pt_weights) + "\n\n\n")
-    file.write("Degree:\n\n " + str(degree) + "\n\n\n")
-    file.close()
 
     return fig

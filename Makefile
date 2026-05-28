@@ -78,6 +78,14 @@ clean:
 
 rebuild: clean build
 
+# 5. Tests
+test:
+	@echo "[TEST] Exécution des tests Rust (core_rust)..."
+	@cargo test
+	@echo "[TEST] Exécution des tests Python (sandbox_python)..."
+	pytest $(SANDBOX_DIR)/tests
+
+
 help:
 	@echo "Commandes disponibles :"
 	@echo "  make venv    : Crée l'environnement virtuel."

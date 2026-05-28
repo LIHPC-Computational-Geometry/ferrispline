@@ -69,8 +69,5 @@ jobs:
       - name: Run all pre-commit hooks
         run: pre-commit run --all-files
 
-      - name: Run Rust tests
-        run: cargo test
-
-      - name: Run PyTest via script
-        run: ./run.sh test
+      - name: Run Rust and Python tests
+        run: make test
