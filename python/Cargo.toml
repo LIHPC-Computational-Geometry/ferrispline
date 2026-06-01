@@ -1,10 +1,10 @@
 [package]
-name = "nurbslib"
+name = "ferrispline"
 version = "0.1.0"
 edition = "2024"
 
 [lib]
-name = "nurbslib"
+name = "ferrispline"
 crate-type = ["cdylib"]
 
 [dependencies]

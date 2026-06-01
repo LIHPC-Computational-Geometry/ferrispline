@@ -63,7 +63,7 @@ impl Curve {
     /// Converts the curve to a vector of Bezier curves.
     pub fn to_bezier(&self) -> Result<Vec<BezierCurve>, String> {
         match self {
-            Curve::Bezier(_c) => todo!("fix: clone() with '&'"),
+            Curve::Bezier(c) => Ok(vec![c.clone()]),
             Curve::Nurbs(c) => c.to_bezier(),
         }
     }
@@ -72,7 +72,7 @@ impl Curve {
     pub fn to_nurbs(&self) -> Result<SplineCurve, String> {
         match self {
             Curve::Bezier(_c) => todo!(),
-            Curve::Nurbs(_c) => todo!("fix: clone() with '&'"),
+            Curve::Nurbs(c) => Ok(c.clone()),
         }
     }
 }
@@ -156,6 +156,13 @@ impl Model {
         self.curves.remove(curve_id).is_some()
     }
 
+    pub fn add_curve(&mut self, curve: Curve) -> Result<CurveId, String> {
+        let id = CurveId::new();
+        self.curves
+            .insert(id.clone(), CurveEntry { curve, dirty: true });
+        Ok(id)
+    }
+
     // -----------------------------
     // Read-only access (pure)
     // -----------------------------
@@ -236,22 +243,16 @@ impl Model {
     fn with_curves_mut<R>(
         &mut self,
         curves_id: &Array1<CurveId>,
-        f: impl FnOnce(Vec<(CurveId, &mut CurveEntry)>) -> Result<R, String>,
+        f: impl FnOnce(&mut HashMap<CurveId, CurveEntry>) -> Result<R, String>,
     ) -> Result<R, ModelError> {
-        let ids_to_fetch: Vec<CurveId> = curves_id.to_vec();
-
-        let entries: Vec<(CurveId, &mut CurveEntry)> = self
-            .curves
-            .iter_mut()
-            .filter(|(id, _)| ids_to_fetch.contains(id))
-            .map(|(id, entry)| {
+        for id in curves_id {
+            if let Some(entry) = self.curves.get_mut(id) {
                 entry.dirty = true;
-                (id.clone(), entry)
-            })
-            .collect();
+            }
+        }
 
-        let out = f(entries).map_err(|message| ModelError::MutationsFailed {
-            curves_id: curves_id.clone().to_owned(),
+        let out = f(&mut self.curves).map_err(|message| ModelError::MutationsFailed {
+            curves_id: curves_id.clone(),
             message,
         })?;
         Ok(out)
@@ -285,15 +286,38 @@ impl Model {
         &mut self,
         curves_id: &Array1<CurveId>,
         new_kind: CurveKind,
-    ) -> Result<(), ModelError> {
-        self.with_curves_mut(curves_id, |_curves| match new_kind {
+    ) -> Result<Vec<CurveId>, ModelError> {
+        let mut new_curves = Vec::new();
+
+        self.with_curves_mut(curves_id, |curves_map| match new_kind {
             CurveKind::Bezier => {
-                todo!("curve.to_bezier()")
+                for id in curves_id {
+                    if let Some(entry) = curves_map.remove(id) {
+                        let beziers = entry.curve.to_bezier()?;
+                        for b in beziers {
+                            new_curves.push(Curve::Bezier(b));
+                        }
+                    }
+                }
+                Ok(())
             }
             CurveKind::Nurbs => {
                 todo!("curves[0].to_nurbs(cuvres) or curve.to_nurbs()")
             }
-        })
+        })?;
+
+        let mut curves_id: Vec<CurveId> = Vec::new();
+        for curve in new_curves {
+            curves_id.push(
+                self.add_curve(curve)
+                    .map_err(|e| ModelError::ConversionFailed {
+                        curve_id: CurveId::new(),
+                        message: e,
+                    })?,
+            );
+        }
+
+        Ok(curves_id)
     }
 
     /// Moves a specific control point of a curve to a new position.
@@ -360,8 +384,8 @@ mod tests {
         let id = model.create_bezier(2, ctrl, None).unwrap();
 
         let pts = model.evaluate(&id, 5).unwrap();
-        assert_eq!(pts.ncols(), 5);
-        assert_eq!(pts.nrows(), 3);
+        assert_eq!(5, pts.nrows());
+        assert_eq!(3, pts.ncols());
         assert!(model.is_dirty(&id).unwrap());
     }
 

@@ -13,6 +13,16 @@ impl CurveId {
         Self(format!("curve-{}", Uuid::new_v4()))
     }
 
+    pub fn try_from_str(s: &str) -> Result<Self, String> {
+        let prefix = "curve-";
+        if let Some(uuid_str) = s.strip_prefix(prefix)
+            && Uuid::parse_str(uuid_str).is_ok()
+        {
+            return Ok(Self(s.to_string()));
+        }
+        Err(format!("Invalid CurveId: {}", s))
+    }
+
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -79,5 +89,19 @@ mod tests {
         let curve = CurveId::new();
         let cp = ControlPointId::new(&curve);
         assert!(cp.as_str().starts_with(&format!("{}.cp-", curve.as_str())));
+    }
+
+    #[test]
+    fn try_from_str_valid_curve_id() {
+        let id = CurveId::new();
+        let parsed = CurveId::try_from_str(id.as_str());
+        assert!(parsed.is_ok());
+        assert_eq!(id, parsed.unwrap());
+    }
+
+    #[test]
+    fn try_from_str_invalid_curve_id() {
+        assert!(CurveId::try_from_str("invalid-prefix").is_err());
+        assert!(CurveId::try_from_str("curve-invalid-uuid").is_err());
     }
 }

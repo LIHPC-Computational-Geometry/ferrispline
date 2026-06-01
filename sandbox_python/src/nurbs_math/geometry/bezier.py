@@ -166,7 +166,11 @@ def eval_bezier_curve(
 
 
 def bezier_curves(
-    knots: list, control_points: MatrixNx3, ctrl_pt_weights: VectorN, degree: int
+    knots: list,
+    control_points: MatrixNx3,
+    ctrl_pt_weights: VectorN,
+    degree: int,
+    sample: int = 100,
 ) -> list:
     bezier_segments: list = []
     for i in range(degree, len(knots) - degree - 1):
@@ -208,6 +212,8 @@ def bezier_curves(
             bezier_weighted_points / bezier_weights[:, np.newaxis]
         )
 
-        curve: MatrixNx3 = eval_bezier_curve(bezier_points, bezier_weights, degree)
+        curve: MatrixNx3 = eval_bezier_curve(
+            bezier_points, bezier_weights, degree, sample
+        )
         bezier_segments.append(curve)
     return bezier_segments

@@ -8,13 +8,18 @@ from .geometry.nurbs import eval_nurbs_curve
 
 
 def figure(
-    degree: int, knots: list, control_points: MatrixNx3, ctrl_pt_weights: VectorN
+    degree: int,
+    knots: list,
+    control_points: MatrixNx3,
+    ctrl_pt_weights: VectorN,
+    sample: int = 100,
 ):
+
     bezier_segments: list = bezier_curves(
-        knots, control_points, ctrl_pt_weights, degree
+        knots, control_points, ctrl_pt_weights, degree, sample
     )
     nurbs_curve: MatrixNx3 = eval_nurbs_curve(
-        knots, control_points, ctrl_pt_weights, degree
+        knots, control_points, ctrl_pt_weights, degree, sample
     )
 
     # DRAW

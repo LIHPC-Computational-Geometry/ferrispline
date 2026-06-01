@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct KnotVector(pub Vec<f64>);
 
 impl KnotVector {

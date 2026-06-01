@@ -64,6 +64,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
+name = "ferrispline"
+version = "0.1.0"
+dependencies = [
+ "core_rust",
+ "nalgebra",
+ "ndarray",
+ "num-integer",
+ "numpy",
+ "pyo3",
+]
+
+[[package]]
 name = "foldhash"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -427,18 +439,6 @@ dependencies = [
  "pyo3",
  "pyo3-build-config",
  "rustc-hash",
-]
-
-[[package]]
-name = "nurbslib"
-version = "0.1.0"
-dependencies = [
- "core_rust",
- "nalgebra",
- "ndarray",
- "num-integer",
- "numpy",
- "pyo3",
 ]
 
 [[package]]

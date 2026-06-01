@@ -8,7 +8,7 @@ def eval_nurbs_curve(
     control_points: MatrixNx3,
     ctrl_pt_weights: VectorN,
     degree: int,
-    sample: int = 300,
+    sample: int = 100,
 ) -> MatrixNx3:
     if sample <= 0:
         raise ValueError("Sample size can not be zero or negative")

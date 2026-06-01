@@ -1,0 +1,22 @@
+# vtk DataFile Version 3.0
+NURBS curve simple degree 2 test
+ASCII
+DATASET POLYDATA
+
+POINTS 4 float
+0.0 0.0 0.0
+1.0 2.0 0.0
+2.0 -1.0 0.0
+3.0 0.0 0.0
+
+FIELD_DATA nurbs_data 1
+knots 7 1 float
+0.0 0.0 0.0 0.5 1.0 1.0 1.0
+
+POINT_DATA 4
+SCALARS weights float 1
+LOOKUP_TABLE default
+1.0
+1.0
+1.0
+1.0

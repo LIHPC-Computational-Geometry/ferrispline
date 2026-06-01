@@ -3,7 +3,7 @@ requires = ["maturin>=1.5,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "nurbslib"
+name = "ferrispline"
 dynamic = ["version"]
 requires-python = ">=3.8"
 classifiers = [
@@ -16,4 +16,4 @@ dependencies = [
 ]
 
 [tool.maturin]
-module-name = "nurbslib"
+module-name = "ferrispline"

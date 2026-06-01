@@ -88,9 +88,9 @@ def load_nurbs_from_vtk(
         )
         knots: VectorN = np.array(knots_list, dtype=np.float64)
     else:
-        knots: VectorN = np.array(
-            mesh.field_data["knots"], dtype=np.float64
-        ).flatten()  # NOTE use flatten() because the return of field_data can be a 2D Matrix
+        knots: VectorN = (
+            np.array(mesh.field_data["knots"], dtype=np.float64).flatten()
+        )  # NOTE use flatten() because the return of field_data can be a 2D Matrix
         degree: int = len(knots) - len(control_points) - 1
 
     if degree < 1:

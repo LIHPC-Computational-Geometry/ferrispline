@@ -8,7 +8,8 @@ impl SplineCurve {
         let domain = self.domain();
         let u_vals = Array1::linspace(domain.0, domain.1, sample);
 
-        let mut points: Array2<f64> = Array2::zeros((3, sample));
+        let mut points: Array2<f64> = Array2::zeros((sample, 3));
+
         for (idx, u) in u_vals.iter().enumerate() {
             let mut numerator = Vector3::zeros();
             let mut denominator = 0.0;
@@ -28,9 +29,9 @@ impl SplineCurve {
                 numerator / denominator
             };
 
-            points[[0, idx]] = point.x;
-            points[[1, idx]] = point.y;
-            points[[2, idx]] = point.z;
+            points[[idx, 0]] = point.x;
+            points[[idx, 1]] = point.y;
+            points[[idx, 2]] = point.z;
         }
         Ok(points)
     }
@@ -50,7 +51,7 @@ impl SplineCurve {
             if i < n
                 && u >= self.knots.as_slice()[i]
                 && (u < self.knots.as_slice()[i + 1]
-                    || (u <= self.knots.as_slice()[i + 1] && u == self.knots.as_slice()[n - 1]))
+                    || (u <= self.knots.as_slice()[i + 1] && u == self.knots.as_slice()[n]))
             {
                 return Ok(1.0);
             } else {
@@ -61,20 +62,22 @@ impl SplineCurve {
         let mut first_part = 0.0;
         let mut second_part = 0.0;
 
-        if i + self.degree < n {
-            let denom1 = self.knots.as_slice()[i + self.degree] - self.knots.as_slice()[i];
+        if i + degree < n {
+            let denom1 = self.knots.as_slice()[i + degree] - self.knots.as_slice()[i];
             if denom1 != 0.0 {
                 first_part =
                     (u - self.knots.as_slice()[i]) / denom1 * self.cox_de_boor(i, degree - 1, u)?;
             }
-            if i + degree + 1 < n {
-                let denom2 = self.knots.as_slice()[i + degree + 1] - self.knots.as_slice()[i + 1];
-                if denom2 != 0.0 {
-                    second_part = (self.knots.as_slice()[i + degree + 1] - u) / denom2
-                        * self.cox_de_boor(i + 1, degree - 1, u)?;
-                }
+        }
+
+        if i + degree + 1 < n {
+            let denom2 = self.knots.as_slice()[i + degree + 1] - self.knots.as_slice()[i + 1];
+            if denom2 != 0.0 {
+                second_part = (self.knots.as_slice()[i + degree + 1] - u) / denom2
+                    * self.cox_de_boor(i + 1, degree - 1, u)?;
             }
         }
+
         Ok(first_part + second_part)
     }
 }
@@ -95,7 +98,6 @@ mod tests {
         let ctrl_pts = Array2::zeros((2, 3));
         let spline = SplineCurve::new(1, ctrl_pts, knots).unwrap();
 
-        // At degree 0, the basis function should return 1.0 if u is within the knot span [0.0, 1.0), else 0.0
         let val_inside = spline.cox_de_boor(1, 0, 0.5).unwrap();
         assert_eq!(val_inside, 1.0, "Should be 1.0 inside the span");
 
@@ -107,7 +109,7 @@ mod tests {
     /// Tests the Partition of Unity: the sum of all basis functions for any u must equal 1.0.
     fn test_partition_of_unity() {
         let knots = KnotVector::new(vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0]).unwrap();
-        let ctrl_pts = Array2::zeros((3, 3)); // degree 2, 3 points
+        let ctrl_pts = Array2::zeros((3, 3));
         let spline = SplineCurve::new(2, ctrl_pts, knots).unwrap();
 
         let u_val = 0.5;
@@ -130,23 +132,21 @@ mod tests {
     #[test]
     /// Tests that a clamped curve starts and ends exactly on its first and last control points.
     fn test_evaluate_clamped_properties() {
-        let knots = KnotVector::new(vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0]).unwrap(); // Clamped
+        let knots = KnotVector::new(vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0]).unwrap();
         let ctrl_pts = array![[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]];
         let spline = SplineCurve::new(2, ctrl_pts, knots).unwrap();
 
         let samples = 10;
         let evaluated_points = spline.evaluate(samples).unwrap();
 
-        // Check start point (first column) matches [1.0, 2.0, 3.0]
         assert!((evaluated_points[[0, 0]] - 1.0).abs() < 1e-6);
-        assert!((evaluated_points[[1, 0]] - 2.0).abs() < 1e-6);
-        assert!((evaluated_points[[2, 0]] - 3.0).abs() < 1e-6);
+        assert!((evaluated_points[[0, 1]] - 2.0).abs() < 1e-6);
+        assert!((evaluated_points[[0, 2]] - 3.0).abs() < 1e-6);
 
-        // Check end point (last column) matches [7.0, 8.0, 9.0]
         let last_idx = samples - 1;
-        assert!((evaluated_points[[0, last_idx]] - 7.0).abs() < 1e-6);
-        assert!((evaluated_points[[1, last_idx]] - 8.0).abs() < 1e-6);
-        assert!((evaluated_points[[2, last_idx]] - 9.0).abs() < 1e-6);
+        assert!((evaluated_points[[last_idx, 0]] - 7.0).abs() < 1e-6);
+        assert!((evaluated_points[[last_idx, 1]] - 8.0).abs() < 1e-6);
+        assert!((evaluated_points[[last_idx, 2]] - 9.0).abs() < 1e-6);
     }
 
     #[test]
@@ -161,13 +161,13 @@ mod tests {
 
         assert_eq!(
             points.nrows(),
-            3,
-            "Matrix should always have 3 rows for X, Y, Z"
+            samples,
+            "Matrix should have rows equal to requested sample count"
         );
         assert_eq!(
             points.ncols(),
-            samples,
-            "Matrix should have columns equal to requested sample count"
+            3,
+            "Matrix should always have 3 columns for X, Y, Z"
         );
     }
 }

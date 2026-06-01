@@ -4,32 +4,44 @@ import matplotlib as mpl
 
 from .core_types import MatrixNx3, VectorN
 
-import nurbslib
+import ferrispline
 
 
 def n_figure(
-    degree: int, knots: list, control_points: MatrixNx3, ctrl_pt_weights: VectorN
+    degree: int,
+    knots: list,
+    control_points: MatrixNx3,
+    ctrl_pt_weights: VectorN,
+    sample: int = 100,
 ):
+    model = ferrispline.PyModel()
     try:
-        curve = nurbslib.PySplineCurve(degree, control_points, ctrl_pt_weights, knots)
+        # Use the model to create a NURBS curve, which returns a curve ID.
+        curve_id = model.create_nurbs(degree, control_points, knots, ctrl_pt_weights)
         print("Super ! La courbe NURBS a été créée avec succès.")
-    except ValueError as e:
-        # PyO3 renverra proprement tes erreurs Rust (PyValueError) ici
+    except Exception as e:
+        # Catch exceptions from the Rust binding
         print(f"Erreur lors de la création : {e}")
+        return
 
-    nurbs_curve = np.array(curve.eval_nurbs_curve(100))
+    # Evaluate the NURBS curve using its ID.
+    nurbs_curve = np.array(model.evaluate(curve_id, sample))
 
-    bezier_segments = curve.to_bezier()
+    # Convert the NURBS curve to Bézier segments.
+    # NOTE: This assumes the `PyModel` wrapper exposes a `to_bezier` method
+    # that returns a list of new curve IDs, one for each segment.
+    bezier_segment_ids = model.convert([curve_id], "bezier")
 
     # DRAW
     fig = plt.figure(figsize=(12, 10))
     ax = fig.add_subplot(111, projection="3d")
     colors = mpl.colormaps.get_cmap("tab10")
-    colors = colors.resampled(len(bezier_segments))
+    colors = colors.resampled(len(bezier_segment_ids))
 
     evaluated_segments = []
-    for idx, segment in enumerate(bezier_segments):
-        seg_points = np.array(segment.evaluate(100, rational=True))
+    # Evaluate each Bézier segment by its ID.
+    for idx, segment_id in enumerate(bezier_segment_ids):
+        seg_points = np.array(model.evaluate(segment_id, sample))
         evaluated_segments.append(seg_points)
 
         ax.plot(
