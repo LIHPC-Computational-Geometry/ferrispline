@@ -79,6 +79,28 @@ impl PyModel {
         Ok(pts.into_pyarray(py))
     }
 
+    pub fn preview_evaluate<'py>(
+        &self,
+        py: Python<'py>,
+        kind: String,
+        degree: usize,
+        cp: PyReadonlyArray2<f64>,
+        cp_w: Option<PyReadonlyArray1<f64>>,
+        knots: Option<Vec<f64>>,
+        sample: usize,
+    ) -> PyResult<Bound<'py, PyArray2<f64>>> {
+        let kind = match kind.as_str() {
+            "bezier" => core_rust::model::CurveKind::Bezier,
+            "nurbs" => core_rust::model::CurveKind::Nurbs,
+            _ => return Err(PyValueError::new_err("Invalid curve kind")),
+        };
+        let cp = cp.as_array().to_owned();
+        let cp_w = cp_w.map(|w| w.as_array().to_owned());
+        let knots = knots.map(| k| KnotVector::new(k)).map(| k | k.ok()).flatten();
+        let pts = core_rust::model::Model::preview_evaluate(kind, degree, cp, cp_w, knots, sample).map_err(PyValueError::new_err)?;
+        Ok(pts.into_pyarray(py))
+    }
+
     /// Returns an array of control points for the specified curve.
     pub fn get_control_points<'py>(
         &self,

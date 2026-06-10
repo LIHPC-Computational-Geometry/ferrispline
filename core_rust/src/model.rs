@@ -166,6 +166,28 @@ impl Model {
         Ok(id)
     }
 
+    pub fn preview_evaluate(kind: CurveKind, degree: usize, cp: Array2<f64>, cp_w: Option<Array1<f64>>, knots: Option<KnotVector>, sample: usize) -> Result<Array2<f64>, String> {
+        match (kind, cp_w, knots) {
+            (CurveKind::Bezier, None, _)=> {
+                let curve = BezierCurve::new(degree, cp)?;
+                Ok(curve.evaluate(sample))
+            },
+            (CurveKind::Bezier, Some(w), _)=> {
+                let curve = BezierCurve::new_with_weights(degree, cp, w)?;
+                Ok(curve.evaluate(sample))
+            },
+            (CurveKind::Nurbs, None, Some(k))=> {
+                let curve = SplineCurve::new(degree, cp, k)?;
+                Ok(curve.evaluate(sample)?)
+            },
+            (CurveKind::Nurbs, Some(w), Some(k)) => {
+                let curve = SplineCurve::new_with_weights(degree, cp, w, k)?;
+                Ok(curve.evaluate(sample)?)
+            },
+            (CurveKind::Nurbs, _, None) => Err("Creation of nurbs impossible: missing knots".to_string()),
+        }
+    }
+
     // -----------------------------
     // Read-only access (pure)
     // -----------------------------
