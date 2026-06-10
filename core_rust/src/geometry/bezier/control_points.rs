@@ -7,10 +7,12 @@ impl BezierCurve {
         _index: usize,
         _new_pos: Array1<f64>,
     ) -> Result<(), String> {
-        todo!("move_control_point")
+        self.control_points.row_mut(_index).assign(&_new_pos);
+        Ok(())
     }
 
     pub fn set_control_point_weight(&mut self, _index: usize, _weight: f64) -> Result<(), String> {
-        todo!("set_control_point_weight")
+        self.weights[_index] = _weight;
+        Ok(())
     }
 }
