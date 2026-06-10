@@ -2,7 +2,7 @@ use core_rust::{core::knot::KnotVector, ids::CurveId, model::Model};
 use numpy::{IntoPyArray, PyArray2, PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::{Python, exceptions::PyValueError, prelude::*};
 
-#[pyclass]
+#[pyclass(module = "ferrispline")]
 pub struct PyModel {
     inner: Model,
 }
@@ -23,6 +23,7 @@ impl PyModel {
     }
 
     #[pyo3(signature = (degree, control_points, weights=None))]
+    /// Creates a new Bezier curve in the model and returns its unique ID.
     pub fn create_bezier(
         &mut self,
         degree: usize,
@@ -39,6 +40,7 @@ impl PyModel {
     }
 
     #[pyo3(signature = (degree, control_points, knots, weights=None))]
+    /// Creates a new NURBS curve in the model and assigns it a unique ID.
     pub fn create_nurbs(
         &mut self,
         degree: usize,
@@ -56,11 +58,13 @@ impl PyModel {
         Ok(id.to_string())
     }
 
+    /// Deletes the curve associated with the given ID.
     pub fn delete_curve(&mut self, curve_id: &str) -> PyResult<bool> {
         let id = CurveId::try_from_str(curve_id).map_err(PyValueError::new_err)?;
         Ok(self.inner.delete_curve(&id))
     }
 
+    /// Evaluates the points of the curve associated with the given ID.
     pub fn evaluate<'py>(
         &self,
         py: Python<'py>,
@@ -75,6 +79,29 @@ impl PyModel {
         Ok(pts.into_pyarray(py))
     }
 
+    /// Returns an array of control points for the specified curve.
+    pub fn get_control_points<'py>(
+        &self,
+        py: Python<'py>,
+        curve_id: &str,
+    ) -> PyResult<Bound<'py, PyArray2<f64>>> {
+        let id = CurveId::try_from_str(curve_id).map_err(PyValueError::new_err)?;
+        let pts = self
+            .inner
+            .get_control_points(&id)
+            .map_err(|e| PyValueError::new_err(format!("{:?}", e)))?;
+        Ok(pts.into_pyarray(py))
+    }
+
+    /// Returns the degree of the curve.
+    pub fn get_degree(&self, curve_id: &str) -> PyResult<usize> {
+        let id = CurveId::try_from_str(curve_id).map_err(PyValueError::new_err)?;
+        self.inner
+            .get_degree(&id)
+            .map_err(|e| PyValueError::new_err(format!("{:?}", e)))
+    }
+
+    /// Converts a set of curves to a different curve kind (e.g., Bezier to NURBS).
     pub fn convert(&mut self, curve_ids: Vec<String>, new_kind: String) -> PyResult<Vec<String>> {
         let ids = curve_ids
             .into_iter()
