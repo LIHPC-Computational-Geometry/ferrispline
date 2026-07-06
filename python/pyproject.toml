@@ -4,11 +4,15 @@ build-backend = "maturin"
 
 [project]
 name = "ferrispline"
+description = "High-performance NURBS and Bézier curve library with a Rust core and Python bindings"
+readme = "../README.md"
 dynamic = ["version"]
 requires-python = ">=3.8"
+license = "MIT OR Apache-2.0"
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Scientific/Engineering :: Mathematics",
 ]
 
 dependencies = [
