@@ -4,15 +4,15 @@ use ndarray::Array1;
 impl BezierCurve {
     pub fn move_control_point(
         &mut self,
-        _index: usize,
-        _new_pos: Array1<f64>,
+        index: usize,
+        new_pos: Array1<f64>,
     ) -> Result<(), String> {
-        self.control_points.row_mut(_index).assign(&_new_pos);
+        self.control_points.row_mut(index).assign(&new_pos);
         Ok(())
     }
 
-    pub fn set_control_point_weight(&mut self, _index: usize, _weight: f64) -> Result<(), String> {
-        self.weights[_index] = _weight;
+    pub fn set_control_point_weight(&mut self, index: usize, weight: f64) -> Result<(), String> {
+        self.weights[index] = weight;
         Ok(())
     }
 }

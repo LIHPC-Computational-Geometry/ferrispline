@@ -1,5 +1,9 @@
-use core_rust::{core::knot::KnotVector, ids::CurveId, model::Model};
-use numpy::{IntoPyArray, PyArray2, PyReadonlyArray1, PyReadonlyArray2};
+use core_rust::{
+    core::knot::KnotVector,
+    ids::CurveId,
+    model::{Curve, Model},
+};
+use numpy::{IntoPyArray, PyArray1, PyArray2, PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::{Python, exceptions::PyValueError, prelude::*};
 
 #[pyclass(module = "ferrispline")]
@@ -96,8 +100,9 @@ impl PyModel {
         };
         let cp = cp.as_array().to_owned();
         let cp_w = cp_w.map(|w| w.as_array().to_owned());
-        let knots = knots.map(| k| KnotVector::new(k)).map(| k | k.ok()).flatten();
-        let pts = core_rust::model::Model::preview_evaluate(kind, degree, cp, cp_w, knots, sample).map_err(PyValueError::new_err)?;
+        let knots = knots.map(|k| KnotVector::new(k)).map(|k| k.ok()).flatten();
+        let pts = core_rust::model::Model::preview_evaluate(kind, degree, cp, cp_w, knots, sample)
+            .map_err(PyValueError::new_err)?;
         Ok(pts.into_pyarray(py))
     }
 
@@ -121,6 +126,44 @@ impl PyModel {
         self.inner
             .get_degree(&id)
             .map_err(|e| PyValueError::new_err(format!("{:?}", e)))
+    }
+
+    pub fn get_knots<'py>(
+        &self,
+        py: Python<'py>,
+        curve_id: &str,
+    ) -> PyResult<Bound<'py, PyArray1<f64>>> {
+        let id = CurveId::try_from_str(curve_id).map_err(PyValueError::new_err)?;
+        let knots = self
+            .inner
+            .get_knots(&id)
+            .map_err(|e| PyValueError::new_err(format!("{:?}", e)))?;
+        Ok(knots.0.into_pyarray(py))
+    }
+
+    pub fn get_weights<'py>(
+        &self,
+        py: Python<'py>,
+        curve_id: &str,
+    ) -> PyResult<Bound<'py, PyArray1<f64>>> {
+        let id = CurveId::try_from_str(curve_id).map_err(PyValueError::new_err)?;
+        let weights = self
+            .inner
+            .get_weights(&id)
+            .map_err(|e| PyValueError::new_err(format!("{:?}", e)))?;
+        Ok(weights.into_pyarray(py))
+    }
+
+    pub fn curve_kind(&self, curve_id: &str) -> PyResult<String> {
+        let id = CurveId::try_from_str(curve_id).map_err(PyValueError::new_err)?;
+        let kind = self
+            .inner
+            .curve_kind(&id)
+            .map_err(|e| PyValueError::new_err(format!("{:?}", e)))?;
+        match kind {
+            core_rust::model::CurveKind::Bezier => Ok("bezier".to_string()),
+            core_rust::model::CurveKind::Nurbs => Ok("nurbs".to_string()),
+        }
     }
 
     /// Converts a set of curves to a different curve kind (e.g., Bezier to NURBS).

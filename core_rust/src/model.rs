@@ -67,8 +67,6 @@ impl Curve {
         }
     }
 
-
-
     /// Evaluates the curve at a given number of sample points.
     /// Pure evaluation. Output shape is currently delegated to underlying implementations.
     pub fn evaluate(&self, sample: usize) -> Result<Array2<f64>, String> {
@@ -166,25 +164,34 @@ impl Model {
         Ok(id)
     }
 
-    pub fn preview_evaluate(kind: CurveKind, degree: usize, cp: Array2<f64>, cp_w: Option<Array1<f64>>, knots: Option<KnotVector>, sample: usize) -> Result<Array2<f64>, String> {
+    pub fn preview_evaluate(
+        kind: CurveKind,
+        degree: usize,
+        cp: Array2<f64>,
+        cp_w: Option<Array1<f64>>,
+        knots: Option<KnotVector>,
+        sample: usize,
+    ) -> Result<Array2<f64>, String> {
         match (kind, cp_w, knots) {
-            (CurveKind::Bezier, None, _)=> {
+            (CurveKind::Bezier, None, _) => {
                 let curve = BezierCurve::new(degree, cp)?;
                 Ok(curve.evaluate(sample))
-            },
-            (CurveKind::Bezier, Some(w), _)=> {
+            }
+            (CurveKind::Bezier, Some(w), _) => {
                 let curve = BezierCurve::new_with_weights(degree, cp, w)?;
                 Ok(curve.evaluate(sample))
-            },
-            (CurveKind::Nurbs, None, Some(k))=> {
+            }
+            (CurveKind::Nurbs, None, Some(k)) => {
                 let curve = SplineCurve::new(degree, cp, k)?;
                 Ok(curve.evaluate(sample)?)
-            },
+            }
             (CurveKind::Nurbs, Some(w), Some(k)) => {
                 let curve = SplineCurve::new_with_weights(degree, cp, w, k)?;
                 Ok(curve.evaluate(sample)?)
-            },
-            (CurveKind::Nurbs, _, None) => Err("Creation of nurbs impossible: missing knots".to_string()),
+            }
+            (CurveKind::Nurbs, _, None) => {
+                Err("Creation of nurbs impossible: missing knots".to_string())
+            }
         }
     }
 
@@ -234,18 +241,33 @@ impl Model {
             .map_err(|e| ModelError::NeedConversion {
                 curve_id: curve_id.clone(),
                 message: e,
-            })?.clone())
+            })?
+            .clone())
     }
 
     /// Returns the degree of the curve.
     pub fn get_degree(&self, curve_id: &CurveId) -> Result<usize, ModelError> {
         Ok(self
-        .get_curve(curve_id)?
-        .get_degree()
-        .map_err(|e| ModelError::NeedConversion {
-            curve_id: curve_id.clone(),
-            message: e,
-        })?)
+            .get_curve(curve_id)?
+            .get_degree()
+            .map_err(|e| ModelError::NeedConversion {
+                curve_id: curve_id.clone(),
+                message: e,
+            })?)
+    }
+
+    pub fn get_knots(&self, curve_id: &CurveId) -> Result<KnotVector, ModelError> {
+        match self.get_curve(curve_id)? {
+            Curve::Bezier(_) => Err(ModelError::NeedConversion { curve_id: curve_id.clone(), message: "Bezier curves do not support knot. Convert to NURBS first.".to_string() }),
+            Curve::Nurbs(c) => Ok(c.knots.clone()),
+        }
+    }
+
+    pub fn get_weights(&self, curve_id: &CurveId) -> Result<Array1<f64>, ModelError> {
+        match self.get_curve(curve_id)? {
+            Curve::Bezier(c) => Ok(c.weights.clone()),
+            Curve::Nurbs(c) => Ok(c.weights.clone()),
+        }
     }
 
 
