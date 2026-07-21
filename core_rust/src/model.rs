@@ -247,18 +247,20 @@ impl Model {
 
     /// Returns the degree of the curve.
     pub fn get_degree(&self, curve_id: &CurveId) -> Result<usize, ModelError> {
-        Ok(self
-            .get_curve(curve_id)?
+        self.get_curve(curve_id)?
             .get_degree()
             .map_err(|e| ModelError::NeedConversion {
                 curve_id: curve_id.clone(),
                 message: e,
-            })?)
+            })
     }
 
     pub fn get_knots(&self, curve_id: &CurveId) -> Result<KnotVector, ModelError> {
         match self.get_curve(curve_id)? {
-            Curve::Bezier(_) => Err(ModelError::NeedConversion { curve_id: curve_id.clone(), message: "Bezier curves do not support knot. Convert to NURBS first.".to_string() }),
+            Curve::Bezier(_) => Err(ModelError::NeedConversion {
+                curve_id: curve_id.clone(),
+                message: "Bezier curves do not support knot. Convert to NURBS first.".to_string(),
+            }),
             Curve::Nurbs(c) => Ok(c.knots.clone()),
         }
     }
@@ -269,7 +271,6 @@ impl Model {
             Curve::Nurbs(c) => Ok(c.weights.clone()),
         }
     }
-
 
     // -----------------------------
     // Mutating access (marks dirty)

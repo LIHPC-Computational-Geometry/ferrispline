@@ -2,11 +2,7 @@ use super::BezierCurve;
 use ndarray::Array1;
 
 impl BezierCurve {
-    pub fn move_control_point(
-        &mut self,
-        index: usize,
-        new_pos: Array1<f64>,
-    ) -> Result<(), String> {
+    pub fn move_control_point(&mut self, index: usize, new_pos: Array1<f64>) -> Result<(), String> {
         self.control_points.row_mut(index).assign(&new_pos);
         Ok(())
     }

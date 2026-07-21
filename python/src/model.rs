@@ -1,8 +1,4 @@
-use core_rust::{
-    core::knot::KnotVector,
-    ids::CurveId,
-    model::{Curve, Model},
-};
+use core_rust::{core::knot::KnotVector, ids::CurveId, model::Model};
 use numpy::{IntoPyArray, PyArray1, PyArray2, PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::{Python, exceptions::PyValueError, prelude::*};
 
@@ -83,14 +79,18 @@ impl PyModel {
         Ok(pts.into_pyarray(py))
     }
 
+    /// Evaluates a preview of the curve based on provided geometric parameters.
+    /// The `curve_data` tuple contains: (control_points, weights, knots).
     pub fn preview_evaluate<'py>(
         &self,
         py: Python<'py>,
         kind: String,
         degree: usize,
-        cp: PyReadonlyArray2<f64>,
-        cp_w: Option<PyReadonlyArray1<f64>>,
-        knots: Option<Vec<f64>>,
+        curve_data: (
+            PyReadonlyArray2<'py, f64>,
+            Option<PyReadonlyArray1<'py, f64>>,
+            Option<Vec<f64>>,
+        ),
         sample: usize,
     ) -> PyResult<Bound<'py, PyArray2<f64>>> {
         let kind = match kind.as_str() {
@@ -98,11 +98,19 @@ impl PyModel {
             "nurbs" => core_rust::model::CurveKind::Nurbs,
             _ => return Err(PyValueError::new_err("Invalid curve kind")),
         };
-        let cp = cp.as_array().to_owned();
-        let cp_w = cp_w.map(|w| w.as_array().to_owned());
-        let knots = knots.map(|k| KnotVector::new(k)).map(|k| k.ok()).flatten();
+
+        // Unpack the tuple parameters
+        let (cp_py, cp_w_py, knots_vec) = curve_data;
+
+        let cp = cp_py.as_array().to_owned();
+        let cp_w = cp_w_py.map(|w| w.as_array().to_owned());
+
+        // Map directly using the function reference and convert Result to Option
+        let knots = knots_vec.map(KnotVector::new).and_then(Result::ok);
+
         let pts = core_rust::model::Model::preview_evaluate(kind, degree, cp, cp_w, knots, sample)
             .map_err(PyValueError::new_err)?;
+
         Ok(pts.into_pyarray(py))
     }
 
