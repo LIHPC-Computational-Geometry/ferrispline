@@ -51,6 +51,22 @@ impl Curve {
         }
     }
 
+    /// Returns a pointer on all control points of this curve.
+    pub fn get_control_points(&self) -> Result<&Array2<f64>, String> {
+        match self {
+            Curve::Bezier(c) => Ok(&c.control_points),
+            Curve::Nurbs(c) => Ok(&c.control_points),
+        }
+    }
+
+    /// Returns the degree of the curve.
+    pub fn get_degree(&self) -> Result<usize, String> {
+        match self {
+            Curve::Bezier(c) => Ok(c.degree),
+            Curve::Nurbs(c) => Ok(c.degree),
+        }
+    }
+
     /// Evaluates the curve at a given number of sample points.
     /// Pure evaluation. Output shape is currently delegated to underlying implementations.
     pub fn evaluate(&self, sample: usize) -> Result<Array2<f64>, String> {
@@ -117,15 +133,7 @@ impl Model {
             None => BezierCurve::new(degree, control_points),
         }?;
 
-        let id = CurveId::new();
-        self.curves.insert(
-            id.clone(),
-            CurveEntry {
-                curve: Curve::Bezier(curve),
-                dirty: true,
-            },
-        );
-        Ok(id)
+        self.add_curve(Curve::Bezier(curve))
     }
 
     /// Creates a new NURBS curve in the model and assigns it a unique ID.
@@ -140,15 +148,7 @@ impl Model {
             Some(w) => SplineCurve::new_with_weights(degree, control_points, w, knots),
             None => SplineCurve::new(degree, control_points, knots),
         }?;
-        let id = CurveId::new();
-        self.curves.insert(
-            id.clone(),
-            CurveEntry {
-                curve: Curve::Nurbs(curve),
-                dirty: true,
-            },
-        );
-        Ok(id)
+        self.add_curve(Curve::Nurbs(curve))
     }
 
     /// Deletes a curve from the model by its ID. Returns `true` if the curve was found and removed.
@@ -156,11 +156,43 @@ impl Model {
         self.curves.remove(curve_id).is_some()
     }
 
-    pub fn add_curve(&mut self, curve: Curve) -> Result<CurveId, String> {
+    /// Adds a new curve to the model.
+    fn add_curve(&mut self, curve: Curve) -> Result<CurveId, String> {
         let id = CurveId::new();
         self.curves
             .insert(id.clone(), CurveEntry { curve, dirty: true });
         Ok(id)
+    }
+
+    pub fn preview_evaluate(
+        kind: CurveKind,
+        degree: usize,
+        cp: Array2<f64>,
+        cp_w: Option<Array1<f64>>,
+        knots: Option<KnotVector>,
+        sample: usize,
+    ) -> Result<Array2<f64>, String> {
+        match (kind, cp_w, knots) {
+            (CurveKind::Bezier, None, _) => {
+                let curve = BezierCurve::new(degree, cp)?;
+                Ok(curve.evaluate(sample))
+            }
+            (CurveKind::Bezier, Some(w), _) => {
+                let curve = BezierCurve::new_with_weights(degree, cp, w)?;
+                Ok(curve.evaluate(sample))
+            }
+            (CurveKind::Nurbs, None, Some(k)) => {
+                let curve = SplineCurve::new(degree, cp, k)?;
+                Ok(curve.evaluate(sample)?)
+            }
+            (CurveKind::Nurbs, Some(w), Some(k)) => {
+                let curve = SplineCurve::new_with_weights(degree, cp, w, k)?;
+                Ok(curve.evaluate(sample)?)
+            }
+            (CurveKind::Nurbs, _, None) => {
+                Err("Creation of nurbs impossible: missing knots".to_string())
+            }
+        }
     }
 
     // -----------------------------
@@ -199,6 +231,45 @@ impl Model {
                 curve_id: curve_id.clone(),
             })?
             .curve)
+    }
+
+    /// Get a pointer on all control points of this curve.
+    pub fn get_control_points(&self, curve_id: &CurveId) -> Result<Array2<f64>, ModelError> {
+        Ok(self
+            .get_curve(curve_id)?
+            .get_control_points()
+            .map_err(|e| ModelError::NeedConversion {
+                curve_id: curve_id.clone(),
+                message: e,
+            })?
+            .clone())
+    }
+
+    /// Returns the degree of the curve.
+    pub fn get_degree(&self, curve_id: &CurveId) -> Result<usize, ModelError> {
+        self.get_curve(curve_id)?
+            .get_degree()
+            .map_err(|e| ModelError::NeedConversion {
+                curve_id: curve_id.clone(),
+                message: e,
+            })
+    }
+
+    pub fn get_knots(&self, curve_id: &CurveId) -> Result<KnotVector, ModelError> {
+        match self.get_curve(curve_id)? {
+            Curve::Bezier(_) => Err(ModelError::NeedConversion {
+                curve_id: curve_id.clone(),
+                message: "Bezier curves do not support knot. Convert to NURBS first.".to_string(),
+            }),
+            Curve::Nurbs(c) => Ok(c.knots.clone()),
+        }
+    }
+
+    pub fn get_weights(&self, curve_id: &CurveId) -> Result<Array1<f64>, ModelError> {
+        match self.get_curve(curve_id)? {
+            Curve::Bezier(c) => Ok(c.weights.clone()),
+            Curve::Nurbs(c) => Ok(c.weights.clone()),
+        }
     }
 
     // -----------------------------
